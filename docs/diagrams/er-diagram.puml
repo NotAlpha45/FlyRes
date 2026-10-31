@@ -1,0 +1,131 @@
+@startuml er-diagram
+' FlyRes database schema. Mirrors backend/src/main/resources/db/schema.sql: keep them in sync.
+hide circle
+hide empty members
+skinparam linetype ortho
+
+entity users {
+  * id : INTEGER <<PK>>
+  --
+  * role : TEXT {CUSTOMER, AGENT, ADMIN}
+  * email : TEXT <<unique>>
+  * password_hash : TEXT
+  * password_salt : TEXT
+  * first_name : TEXT
+  * last_name : TEXT
+  phone : TEXT
+  * created_at : TEXT
+}
+
+entity airports {
+  * id : INTEGER <<PK>>
+  --
+  * iata_code : TEXT <<unique>>
+  * name : TEXT
+  * city : TEXT
+  * country : TEXT
+}
+
+entity airlines {
+  * id : INTEGER <<PK>>
+  --
+  * iata_code : TEXT <<unique>>
+  * name : TEXT
+}
+
+entity aircraft {
+  * id : INTEGER <<PK>>
+  --
+  * airline_id : INTEGER <<FK>>
+  * registration : TEXT <<unique>>
+  * model : TEXT
+  * seat_rows : INTEGER
+  * seats_per_row : INTEGER
+}
+
+entity routes {
+  * id : INTEGER <<PK>>
+  --
+  * origin_airport_id : INTEGER <<FK>>
+  * destination_airport_id : INTEGER <<FK>>
+}
+
+entity flights {
+  * id : INTEGER <<PK>>
+  --
+  * flight_number : TEXT
+  * route_id : INTEGER <<FK>>
+  * aircraft_id : INTEGER <<FK>>
+  * departure_time : TEXT
+  * arrival_time : TEXT
+  * price_cents : INTEGER
+  * status : TEXT {SCHEDULED, ARCHIVED}
+}
+
+entity seats {
+  * id : INTEGER <<PK>>
+  --
+  * flight_id : INTEGER <<FK>>
+  * seat_label : TEXT
+}
+
+entity reservations {
+  * id : INTEGER <<PK>>
+  --
+  * confirmation_code : TEXT <<unique>>
+  * customer_id : INTEGER <<FK>>
+  * seat_id : INTEGER <<FK>>
+  * amount_cents : INTEGER
+  * status : TEXT {CONFIRMED, CANCELLED}
+  * created_at : TEXT
+  cancelled_at : TEXT
+}
+note bottom of reservations
+  Partial unique index on seat_id
+  WHERE status = 'CONFIRMED'
+  prevents double booking.
+end note
+
+entity payments {
+  * id : INTEGER <<PK>>
+  --
+  * reservation_id : INTEGER <<FK, unique>>
+  * cardholder_name : TEXT
+  * card_last4 : TEXT
+  * amount_cents : INTEGER
+  * status : TEXT {COMPLETED, REFUNDED}
+  * paid_at : TEXT
+  refunded_at : TEXT
+}
+
+entity promotions {
+  * id : INTEGER <<PK>>
+  --
+  * title : TEXT
+  * description : TEXT
+  * target_month : TEXT (yyyy-MM)
+  * status : TEXT {SCHEDULED, ARCHIVED}
+  * created_at : TEXT
+}
+
+entity promotion_deliveries {
+  * id : INTEGER <<PK>>
+  --
+  * promotion_id : INTEGER <<FK>>
+  * customer_id : INTEGER <<FK>>
+  * delivery_month : TEXT
+  * delivered_at : TEXT
+}
+
+airlines ||--o{ aircraft
+airports ||--o{ routes : origin
+airports ||--o{ routes : destination
+routes ||--o{ flights
+aircraft ||--o{ flights
+flights ||--|{ seats
+seats ||--o{ reservations
+users ||--o{ reservations : customer
+reservations ||--|| payments
+promotions ||--o{ promotion_deliveries
+users ||--o{ promotion_deliveries : customer
+@enduml

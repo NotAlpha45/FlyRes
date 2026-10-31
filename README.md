@@ -67,7 +67,7 @@ backend/                       business and data layers
   com.flyres.domain.*          <<entity>>   user/, flight/, booking/, promotion/
   com.flyres.control.*         <<control>>  one *Controller per major use case; strategy/ for patterns
   com.flyres.repository.*      repository interfaces only
-  com.flyres.data              DatabaseManager (Singleton)
+  com.flyres.data              DatabaseManager (Singleton), TransactionRunner
   com.flyres.data.sqlite.*     Sqlite*Repository implementations, the ONLY place SQL lives
   com.flyres.common.*          exception/, security/, validation/
   src/main/resources/db/       schema.sql, seed.sql
@@ -160,7 +160,16 @@ Work happens on issues `FLY-01` to `FLY-26`.
 
 ## Demo accounts
 
-The seed data doesn't include any accounts yet. They will be listed here when the seeding issue lands.
+The seed data creates these accounts. They are demo values for a local course project.
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Admin | `admin@flyres.ca` | `Admin#2026` |
+| Agent | `agent@flyres.ca` | `Agent#2026` |
+| Customer | `maya@example.com` | `Customer#2026` |
+| Customer | `omar@example.com` | `Customer#2026` |
+
+The seed also adds 7 Canadian airports, 3 airlines, 5 aircraft and 16 flights over the next two weeks (one of them archived). It includes a few bookings for Maya and Omar, and promotions for this month and next. Flight dates are relative to the day the database is created, so reset the database if the demo flights have departed.
 
 ---
 

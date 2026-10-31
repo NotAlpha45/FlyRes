@@ -17,9 +17,22 @@ package "com.flyres.data" {
     - connection : Connection
     + {static} getInstance() : DatabaseManager
     + {static} forTesting() : DatabaseManager
+    + {static} forTestingWithSeedData() : DatabaseManager
+    ~ {static} openFile(file : Path) : DatabaseManager
     + getConnection() : Connection
     + close() : void
   }
+
+  class TransactionRunner {
+    + TransactionRunner(database : DatabaseManager)
+    + inTransaction(work : Supplier<T>) : T
+    + inTransaction(work : Runnable) : void
+  }
+}
+
+package "com.flyres.common.exception" {
+  class DataAccessException
+  RuntimeException <|-- DataAccessException
 }
 
 package "com.flyres.ui" {
@@ -38,6 +51,8 @@ package "com.flyres.ui.navigation" {
 }
 
 FlyResBackend --> DatabaseManager
+TransactionRunner --> DatabaseManager
+TransactionRunner ..> DataAccessException : throws
 Launcher ..> FlyResApp : launches
 FlyResApp --> FlyResBackend
 FlyResApp ..> SceneRouter
