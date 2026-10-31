@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Sidebar runs the full height; the top bar and content sit to its right. -->
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.flyres.ui.view.shell.AppShellViewController"
+            styleClass="app-shell">
+    <left>
+        <VBox styleClass="sidebar">
+            <Label text="FlyRes" styleClass="brand"/>
+            <VBox fx:id="navigation" styleClass="sidebar-nav"/>
+        </VBox>
+    </left>
+    <center>
+        <VBox>
+            <HBox styleClass="top-bar">
+                <Label fx:id="pageTitle" styleClass="page-title"/>
+            </HBox>
+            <ScrollPane fitToWidth="true" styleClass="content-scroll" VBox.vgrow="ALWAYS">
+                <StackPane fx:id="content" styleClass="content-area"/>
+            </ScrollPane>
+        </VBox>
+    </center>
+</BorderPane>

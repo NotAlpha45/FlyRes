@@ -34,7 +34,38 @@ package "com.flyres.ui.navigation" {
   }
   enum ViewId {
     HOME
+    COMPONENT_DEMO
+    + title() : String
   }
+}
+
+package "com.flyres.ui.component" {
+  class Toasts <<utility>> {
+    + {static} install(root : StackPane) : void
+    + {static} success(source : Node, message : String) : void
+    + {static} error(source : Node, message : String) : void
+  }
+  class ConfirmDialog <<utility>> {
+    + {static} show(owner : Node, title : String, message : String, confirmLabel : String) : boolean
+  }
+  class FormValidator {
+    + field(name : String, input : Control, errorLabel : Label) : FormValidator
+    + showError(name : String, message : String) : void
+    + clearErrors() : void
+    + hasErrors() : boolean
+    + focusFirstError() : void
+  }
+}
+
+package "com.flyres.ui.view.shell" {
+  class AppShellViewController <<boundary>> {
+    + setNavigation(views : List<ViewId>, onSelect : Consumer<ViewId>) : void
+    + show(view : ViewId, page : Node) : void
+  }
+}
+
+package "com.flyres.ui.view.demo" {
+  class ComponentDemoViewController <<boundary>>
 }
 
 FlyResBackend --> DatabaseManager
@@ -42,4 +73,10 @@ Launcher ..> FlyResApp : launches
 FlyResApp --> FlyResBackend
 FlyResApp ..> SceneRouter
 SceneRouter ..> ViewId
+SceneRouter --> AppShellViewController
+SceneRouter ..> Toasts : installs
+AppShellViewController ..> ViewId
+ComponentDemoViewController ..> Toasts
+ComponentDemoViewController ..> ConfirmDialog
+ComponentDemoViewController --> FormValidator
 @enduml

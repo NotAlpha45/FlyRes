@@ -74,8 +74,8 @@ backend/                       business and data layers
 frontend/                      presentation layer (JavaFX)
   com.flyres.ui                Launcher (main), FlyResApp (Application)
   com.flyres.ui.navigation     SceneRouter, ViewId
-  com.flyres.ui.component      reusable JavaFX components
-  com.flyres.ui.view.*         <<boundary>> *ViewController classes, grouped by feature
+  com.flyres.ui.component      Toasts, ConfirmDialog, FormValidator
+  com.flyres.ui.view.*         <<boundary>> *ViewController classes, grouped by feature (shell/ is the app frame)
   src/main/resources/com/flyres/ui/
     fxml/                      one FXML file per screen, mirroring ui.view.*
     css/flyres.css             app styles on top of AtlantaFX Primer Light
@@ -144,6 +144,22 @@ Work happens on issues `FLY-01` to `FLY-26`.
 - Keep spacing on an 8 px scale and use cards for grouped content.
 - Show validation errors inline under the field and success as a toast.
 - Every destructive action (cancel, archive) asks for confirmation and says what will happen.
+
+The **Components** screen in the sidebar shows every shared piece: cards, buttons, a table with its empty state, a form with inline errors, toasts and the confirm dialog. Copy from it when you build a new screen.
+
+| Need | Use |
+| --- | --- |
+| Success or error message | `Toasts.success(node, "Booking confirmed.")` or `Toasts.error(node, ...)` |
+| Confirm a destructive action | `if (ConfirmDialog.show(node, "Cancel booking?", "You will be fully refunded.", "Cancel booking")) { ... }` |
+| Inline field errors | `new FormValidator().field("email", emailField, emailError)`, then `showError("email", message)` |
+| Group content | a `VBox` with style class `card` and a `card-title` label |
+| Empty list | `table.setPlaceholder(label)` with style class `empty-state` |
+
+#### Adding a screen
+
+1. Create `fxml/<feature>/<Name>View.fxml` with root style class `page`, and its controller `ui.view.<feature>.<Name>ViewController`.
+2. Add an entry to `ViewId` with its title and FXML path. Use `inShell = false` for full-window screens such as login.
+3. Navigate to it with `router.goTo(ViewId.<NAME>)`. Shell screens appear in the sidebar automatically.
 
 ---
 
