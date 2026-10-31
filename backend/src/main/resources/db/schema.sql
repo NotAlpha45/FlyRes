@@ -1,0 +1,4 @@
+-- FlyRes schema (SQLite).
+-- Money is INTEGER cents; times are ISO-8601 TEXT in local airport time.
+-- No migrations: after editing this file, delete ~/.flyres so the database is recreated.
+-- Tables are added by the issues that need them.

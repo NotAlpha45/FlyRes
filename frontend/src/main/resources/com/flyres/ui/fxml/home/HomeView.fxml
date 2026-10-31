@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Placeholder start screen; replaced by the login screen. -->
+<VBox xmlns:fx="http://javafx.com/fxml" styleClass="screen, centered">
+    <Label text="FlyRes" styleClass="title-1"/>
+    <Label text="Flight reservations, coming soon." styleClass="text-muted"/>
+</VBox>

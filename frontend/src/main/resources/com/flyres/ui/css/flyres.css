@@ -1,0 +1,23 @@
+/*
+ * FlyRes styles, layered on top of the AtlantaFX Primer Light theme.
+ * Use AtlantaFX colour variables (-color-accent-*, -color-fg-*, -color-bg-*) and keep
+ * all spacing on the 8 px scale: 8, 16, 24, 32.
+ */
+
+.screen {
+    -fx-padding: 32px;
+    -fx-spacing: 16px;
+}
+
+.centered {
+    -fx-alignment: center;
+}
+
+.card {
+    -fx-background-color: -color-bg-default;
+    -fx-background-radius: 8px;
+    -fx-border-color: -color-border-default;
+    -fx-border-radius: 8px;
+    -fx-padding: 16px;
+    -fx-spacing: 8px;
+}

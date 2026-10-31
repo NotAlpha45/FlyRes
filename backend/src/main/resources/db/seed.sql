@@ -1,0 +1,3 @@
+-- FlyRes demo data, loaded once when the database file is first created.
+-- Flight dates must be relative to today, e.g. date('now', '+7 days'), so the demo never expires.
+-- Keep demo accounts in sync with the README.

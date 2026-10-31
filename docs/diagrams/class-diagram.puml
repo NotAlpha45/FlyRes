@@ -1,0 +1,45 @@
+@startuml class-diagram
+' FlyRes class diagram. Update it whenever a class or public control method is added.
+skinparam classAttributeIconSize 0
+hide empty members
+
+package "com.flyres" {
+  class FlyResBackend <<facade>> {
+    + FlyResBackend(database : DatabaseManager)
+    + {static} create() : FlyResBackend
+    + close() : void
+  }
+}
+
+package "com.flyres.data" {
+  class DatabaseManager <<singleton>> {
+    - {static} instance : DatabaseManager
+    - connection : Connection
+    + {static} getInstance() : DatabaseManager
+    + {static} forTesting() : DatabaseManager
+    + getConnection() : Connection
+    + close() : void
+  }
+}
+
+package "com.flyres.ui" {
+  class FlyResApp
+  class Launcher
+}
+
+package "com.flyres.ui.navigation" {
+  class SceneRouter {
+    + SceneRouter(stage : Stage)
+    + goTo(view : ViewId) : void
+  }
+  enum ViewId {
+    HOME
+  }
+}
+
+FlyResBackend --> DatabaseManager
+Launcher ..> FlyResApp : launches
+FlyResApp --> FlyResBackend
+FlyResApp ..> SceneRouter
+SceneRouter ..> ViewId
+@enduml
