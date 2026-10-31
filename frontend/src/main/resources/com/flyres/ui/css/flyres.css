@@ -1,16 +1,79 @@
 /*
  * FlyRes styles, layered on top of the AtlantaFX Primer Light theme.
- * Use AtlantaFX colour variables (-color-accent-*, -color-fg-*, -color-bg-*) and keep
- * all spacing on the 8 px scale: 8, 16, 24, 32.
+ * Use AtlantaFX colour variables (-color-accent-*, -color-fg-*, -color-bg-*) so the single
+ * accent colour comes from the theme, and keep all spacing on the 8 px scale: 8, 16, 24, 32.
  */
 
+/* ---------- App shell ---------- */
+
+.app-shell {
+    -fx-background-color: -color-bg-default;
+}
+
+.sidebar {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-default;
+    -fx-border-width: 0 1px 0 0;
+    -fx-padding: 16px 8px;
+    -fx-spacing: 24px;
+    -fx-pref-width: 208px;
+}
+
+.brand {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-accent-fg;
+    -fx-padding: 0 16px;
+}
+
+.sidebar-nav {
+    -fx-spacing: 8px;
+}
+
+.sidebar-item {
+    -fx-alignment: center-left;
+    -fx-padding: 8px 16px;
+    -fx-background-radius: 8px;
+}
+
+.sidebar-item.active {
+    -fx-background-color: -color-accent-subtle;
+    -fx-text-fill: -color-accent-fg;
+    -fx-font-weight: bold;
+}
+
+.top-bar {
+    -fx-alignment: center-left;
+    -fx-padding: 16px 24px;
+    -fx-spacing: 16px;
+    -fx-border-color: -color-border-default;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.page-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.content-scroll,
+.content-scroll > .viewport {
+    -fx-background-color: -color-bg-default;
+}
+
+.content-area {
+    -fx-padding: 24px;
+}
+
+/* ---------- Layout ---------- */
+
+/* Full-window screens outside the shell, such as login. */
 .screen {
     -fx-padding: 32px;
     -fx-spacing: 16px;
 }
 
-.centered {
-    -fx-alignment: center;
+.page {
+    -fx-spacing: 24px;
 }
 
 .card {
@@ -19,5 +82,77 @@
     -fx-border-color: -color-border-default;
     -fx-border-radius: 8px;
     -fx-padding: 16px;
+    -fx-spacing: 16px;
+}
+
+.card-row {
+    -fx-spacing: 24px;
+}
+
+/* Equal preferred widths so cards in a row share the space evenly. */
+.card-row > .card {
+    -fx-pref-width: 320px;
+}
+
+.card-header {
+    -fx-alignment: center-left;
+    -fx-spacing: 16px;
+}
+
+.card-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.button-row {
+    -fx-alignment: center-left;
     -fx-spacing: 8px;
+}
+
+/* ---------- Forms ---------- */
+
+.form-field {
+    -fx-spacing: 8px;
+}
+
+.field-label {
+    -fx-font-weight: bold;
+}
+
+.field-error {
+    -fx-text-fill: -color-danger-fg;
+}
+
+/* ---------- Tables and empty states ---------- */
+
+.data-table {
+    -fx-pref-height: 240px;
+}
+
+.empty-state {
+    -fx-text-fill: -color-fg-muted;
+    -fx-padding: 24px;
+}
+
+/* ---------- Toasts ---------- */
+
+.toast-layer {
+    -fx-alignment: bottom-right;
+    -fx-padding: 24px;
+    -fx-spacing: 8px;
+}
+
+.toast {
+    -fx-padding: 8px 16px;
+    -fx-background-radius: 8px;
+    -fx-text-fill: -color-fg-emphasis;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 16, 0, 0, 4);
+}
+
+.toast-success {
+    -fx-background-color: -color-success-emphasis;
+}
+
+.toast-error {
+    -fx-background-color: -color-danger-emphasis;
 }

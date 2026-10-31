@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Living style guide: every shared UI piece, themed. Not a real feature screen. -->
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.flyres.ui.view.demo.ComponentDemoViewController"
+      styleClass="page">
+
+    <Label text="The shared building blocks every FlyRes screen uses." styleClass="text-muted"/>
+
+    <HBox styleClass="card-row">
+        <VBox styleClass="card" HBox.hgrow="ALWAYS">
+            <Label text="Card, toasts and confirmation" styleClass="card-title"/>
+            <Label text="Cards group related content. Toasts confirm success, and destructive actions always ask first."
+                   wrapText="true" styleClass="text-muted"/>
+            <HBox styleClass="button-row">
+                <Button text="Success toast" onAction="#onSuccessToast" styleClass="accent"/>
+                <Button text="Error toast" onAction="#onErrorToast"/>
+                <Button fx:id="archiveButton" text="Archive flight…" onAction="#onArchive" styleClass="danger"/>
+            </HBox>
+        </VBox>
+
+        <VBox styleClass="card" HBox.hgrow="ALWAYS">
+            <Label text="Form with inline validation" styleClass="card-title"/>
+            <VBox styleClass="form-field">
+                <Label text="Full name" styleClass="field-label"/>
+                <TextField fx:id="nameField" promptText="Maya Patel"/>
+                <Label fx:id="nameError" styleClass="field-error"/>
+            </VBox>
+            <VBox styleClass="form-field">
+                <Label text="Email" styleClass="field-label"/>
+                <TextField fx:id="emailField" promptText="name@example.com"/>
+                <Label fx:id="emailError" styleClass="field-error"/>
+            </VBox>
+            <HBox styleClass="button-row">
+                <Button text="Save" onAction="#onSave" styleClass="accent" defaultButton="true"/>
+            </HBox>
+        </VBox>
+    </HBox>
+
+    <VBox styleClass="card">
+        <HBox styleClass="card-header">
+            <Label text="Table" styleClass="card-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <CheckBox fx:id="emptyToggle" text="Show empty state" onAction="#onToggleEmpty"/>
+        </HBox>
+        <TableView fx:id="flightTable" styleClass="data-table">
+            <columnResizePolicy>
+                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN"/>
+            </columnResizePolicy>
+            <columns>
+                <TableColumn fx:id="numberColumn" text="Flight"/>
+                <TableColumn fx:id="routeColumn" text="Route"/>
+                <TableColumn fx:id="departureColumn" text="Departure"/>
+                <TableColumn fx:id="priceColumn" text="Price"/>
+            </columns>
+        </TableView>
+    </VBox>
+</VBox>
