@@ -15,7 +15,7 @@ subprojects {
 
         tasks.withType<JavaCompile>().configureEach {
             options.encoding = "UTF-8"
-            options.compilerArgs.add("-Xlint:all")
+            options.compilerArgs.add("-Xlint:all,-serial")
         }
 
         tasks.withType<Test>().configureEach {

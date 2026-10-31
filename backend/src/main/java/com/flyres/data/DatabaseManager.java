@@ -55,19 +55,46 @@ public final class DatabaseManager implements AutoCloseable {
         return database;
     }
 
-    private static DatabaseManager openFile(Path file) {
+    /** Returns a new, independent in-memory database with the schema and the demo seed data. */
+    public static DatabaseManager forTestingWithSeedData() {
+        DatabaseManager database = forTesting();
+        database.runScript(SEED_SCRIPT);
+        return database;
+    }
+
+    /**
+     * Opens the database file, creating and seeding it in one transaction if it does not exist.
+     * If creation fails, the half-built file is deleted so the next launch starts clean.
+     */
+    static DatabaseManager openFile(Path file) {
         boolean isNew = Files.notExists(file);
         try {
-            Files.createDirectories(file.getParent());
+            Files.createDirectories(file.toAbsolutePath().getParent());
         } catch (IOException e) {
-            throw new UncheckedIOException("Could not create database directory " + file.getParent(), e);
+            throw new UncheckedIOException("Could not create database directory for " + file, e);
         }
         DatabaseManager database = new DatabaseManager("jdbc:sqlite:" + file);
         if (isNew) {
-            database.runScript(SCHEMA_SCRIPT);
-            database.runScript(SEED_SCRIPT);
+            try {
+                new TransactionRunner(database).inTransaction(() -> {
+                    database.runScript(SCHEMA_SCRIPT);
+                    database.runScript(SEED_SCRIPT);
+                });
+            } catch (RuntimeException e) {
+                database.close();
+                deleteQuietly(file, e);
+                throw e;
+            }
         }
         return database;
+    }
+
+    private static void deleteQuietly(Path file, RuntimeException cause) {
+        try {
+            Files.deleteIfExists(file);
+        } catch (IOException e) {
+            cause.addSuppressed(e);
+        }
     }
 
     /** Returns the shared connection. Callers must not close it. */
