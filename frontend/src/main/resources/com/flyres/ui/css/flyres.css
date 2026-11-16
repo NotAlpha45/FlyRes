@@ -64,6 +64,60 @@
     -fx-padding: 24px;
 }
 
+/* Who is logged in, at the right of the top bar. */
+.user-badge {
+    -fx-alignment: center-right;
+}
+
+.user-name {
+    -fx-font-weight: bold;
+}
+
+.user-role {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 12px;
+}
+
+/* ---------- Authentication (login, registration) ---------- */
+
+.auth-screen {
+    -fx-background-color: -color-bg-subtle;
+    -fx-padding: 32px;
+}
+
+.auth-scroll,
+.auth-scroll > .viewport {
+    -fx-background-color: -color-bg-subtle;
+}
+
+/* Narrow centred card; overrides the regular card padding. */
+.auth-card {
+    -fx-pref-width: 400px;
+    -fx-max-width: 400px;
+    -fx-padding: 32px;
+    -fx-spacing: 16px;
+}
+
+.auth-brand {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-accent-fg;
+}
+
+.auth-header {
+    -fx-spacing: 8px;
+}
+
+.auth-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.auth-footer {
+    -fx-alignment: center;
+    -fx-spacing: 8px;
+}
+
 /* ---------- Layout ---------- */
 
 /* Full-window screens outside the shell, such as login. */
@@ -121,6 +175,16 @@
 
 .field-error {
     -fx-text-fill: -color-danger-fg;
+}
+
+.field-hint {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 12px;
+}
+
+/* Fields side by side, such as first and last name. */
+.form-row {
+    -fx-spacing: 16px;
 }
 
 /* ---------- Tables and empty states ---------- */

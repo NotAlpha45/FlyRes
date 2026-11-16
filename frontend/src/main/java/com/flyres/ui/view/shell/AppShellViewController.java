@@ -5,6 +5,7 @@ import com.flyres.ui.navigation.ViewId;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
@@ -13,7 +14,7 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
-/** The frame around every shell screen: sidebar navigation, top bar and content area. */
+/** The frame around every shell screen: sidebar navigation, top bar with the user, and content area. */
 public class AppShellViewController {
 
     private static final String ACTIVE = "active";
@@ -23,9 +24,14 @@ public class AppShellViewController {
     @FXML
     private Label pageTitle;
     @FXML
+    private Label userName;
+    @FXML
+    private Label userRole;
+    @FXML
     private StackPane content;
 
     private final Map<ViewId, Button> navigationButtons = new EnumMap<>(ViewId.class);
+    private Runnable onLogout = () -> { };
 
     /** Fills the sidebar with one entry per view; selecting an entry calls {@code onSelect}. */
     public void setNavigation(List<ViewId> views, Consumer<ViewId> onSelect) {
@@ -41,6 +47,17 @@ public class AppShellViewController {
         }
     }
 
+    /** Shows who is logged in, in the top bar. */
+    public void setUser(String name, String role) {
+        userName.setText(name);
+        userRole.setText(role);
+    }
+
+    /** Sets what the Log out button does. */
+    public void setOnLogout(Runnable onLogout) {
+        this.onLogout = Objects.requireNonNull(onLogout);
+    }
+
     /** Shows {@code page} in the content area and marks {@code view} as the current screen. */
     public void show(ViewId view, Node page) {
         pageTitle.setText(view.title());
@@ -51,5 +68,10 @@ public class AppShellViewController {
                 button.getStyleClass().add(ACTIVE);
             }
         });
+    }
+
+    @FXML
+    private void onLogout() {
+        onLogout.run();
     }
 }

@@ -7,7 +7,7 @@ import com.flyres.ui.navigation.ViewId;
 import javafx.application.Application;
 import javafx.stage.Stage;
 
-/** JavaFX application: starts the backend, applies the theme and shows the first screen. */
+/** JavaFX application: starts the backend, applies the theme and shows the login screen. */
 public class FlyResApp extends Application {
 
     private FlyResBackend backend;
@@ -21,8 +21,8 @@ public class FlyResApp extends Application {
     public void start(Stage stage) {
         Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
 
-        SceneRouter router = new SceneRouter(stage);
-        router.goTo(ViewId.HOME);
+        SceneRouter router = new SceneRouter(stage, backend, new AppSession());
+        router.goTo(ViewId.LOGIN);
 
         stage.setTitle("FlyRes");
         stage.show();

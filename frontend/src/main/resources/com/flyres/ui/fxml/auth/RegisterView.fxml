@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Hyperlink?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Full-window customer registration; scrolls when inline errors make it taller than the window. -->
+<ScrollPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.flyres.ui.view.auth.RegisterViewController"
+            fitToWidth="true" fitToHeight="true" styleClass="auth-scroll">
+    <StackPane styleClass="auth-screen">
+        <VBox styleClass="card,auth-card" maxHeight="-Infinity">
+            <Label text="FlyRes" styleClass="auth-brand"/>
+            <VBox styleClass="auth-header">
+                <Label text="Create your account" styleClass="auth-title"/>
+                <Label text="Book flights and manage your trips. Agents and administrators get their accounts from FlyRes."
+                       wrapText="true" styleClass="text-muted"/>
+            </VBox>
+
+            <HBox styleClass="form-row">
+                <VBox styleClass="form-field" HBox.hgrow="ALWAYS">
+                    <Label text="First name" styleClass="field-label"/>
+                    <TextField fx:id="firstNameField"/>
+                    <Label fx:id="firstNameError" styleClass="field-error" wrapText="true"/>
+                </VBox>
+                <VBox styleClass="form-field" HBox.hgrow="ALWAYS">
+                    <Label text="Last name" styleClass="field-label"/>
+                    <TextField fx:id="lastNameField"/>
+                    <Label fx:id="lastNameError" styleClass="field-error" wrapText="true"/>
+                </VBox>
+            </HBox>
+
+            <VBox styleClass="form-field">
+                <Label text="Email" styleClass="field-label"/>
+                <TextField fx:id="emailField" promptText="name@example.com"/>
+                <Label fx:id="emailError" styleClass="field-error" wrapText="true"/>
+            </VBox>
+            <VBox styleClass="form-field">
+                <Label text="Phone (optional)" styleClass="field-label"/>
+                <TextField fx:id="phoneField" promptText="403-555-0142"/>
+                <Label fx:id="phoneError" styleClass="field-error" wrapText="true"/>
+            </VBox>
+            <VBox styleClass="form-field">
+                <Label text="Password" styleClass="field-label"/>
+                <PasswordField fx:id="passwordField"/>
+                <Label text="At least 8 characters, with a letter and a digit." styleClass="field-hint"/>
+                <Label fx:id="passwordError" styleClass="field-error" wrapText="true"/>
+            </VBox>
+            <VBox styleClass="form-field">
+                <Label text="Confirm password" styleClass="field-label"/>
+                <PasswordField fx:id="confirmPasswordField"/>
+                <Label fx:id="confirmPasswordError" styleClass="field-error" wrapText="true"/>
+            </VBox>
+
+            <Button fx:id="createButton" text="Create account" onAction="#onCreateAccount" defaultButton="true"
+                    maxWidth="Infinity" styleClass="accent"/>
+
+            <HBox styleClass="auth-footer">
+                <Label text="Already have an account?" styleClass="text-muted"/>
+                <Hyperlink text="Back to login" onAction="#onBackToLogin"/>
+            </HBox>
+        </VBox>
+    </StackPane>
+</ScrollPane>

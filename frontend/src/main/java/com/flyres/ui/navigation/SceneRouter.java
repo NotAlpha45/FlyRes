@@ -1,5 +1,8 @@
 package com.flyres.ui.navigation;
 
+import com.flyres.FlyResBackend;
+import com.flyres.domain.user.User;
+import com.flyres.ui.AppSession;
 import com.flyres.ui.component.Toasts;
 import com.flyres.ui.view.shell.AppShellViewController;
 import java.io.IOException;
@@ -14,7 +17,10 @@ import javafx.stage.Stage;
 
 /**
  * Swaps screens inside the single application {@link Stage}. Shell screens are placed in the
- * content area of the app shell; full-window screens replace the shell entirely.
+ * content area of the app shell; full-window screens, such as login, replace the shell entirely.
+ * <p>
+ * Every FXML controller is created here: one with a public {@code (ViewContext)} constructor receives
+ * the backend, the session and this router; otherwise its no-argument constructor is used.
  */
 public final class SceneRouter {
 
@@ -25,15 +31,20 @@ public final class SceneRouter {
     private static final double MIN_WIDTH = 900;
     private static final double MIN_HEIGHT = 600;
 
+    private final AppSession session;
+    private final ViewContext context;
     private final StackPane page = new StackPane();
     private final Parent shellView;
     private final AppShellViewController shell;
 
-    public SceneRouter(Stage stage) {
+    public SceneRouter(Stage stage, FlyResBackend backend, AppSession session) {
+        this.session = Objects.requireNonNull(session);
+        this.context = new ViewContext(Objects.requireNonNull(backend), session, this);
+
         FXMLLoader shellLoader = loader(SHELL_FXML);
         this.shellView = load(shellLoader);
         this.shell = shellLoader.getController();
-        shell.setNavigation(ViewId.sidebarItems(), this::goTo);
+        shell.setOnLogout(this::logout);
 
         StackPane root = new StackPane(page);
         Toasts.install(root);
@@ -45,19 +56,53 @@ public final class SceneRouter {
         stage.setMinHeight(MIN_HEIGHT);
     }
 
-    /** Replaces the current screen with the given one. */
-    public void goTo(ViewId view) {
-        Parent content = load(loader(view.resourcePath()));
-        if (view.inShell()) {
-            shell.show(view, content);
+    /**
+     * Replaces the current screen with {@code view} and returns its FXML controller.
+     * A shell screen requested while nobody is logged in shows the login screen instead.
+     */
+    public <C> C goTo(ViewId view) {
+        ViewId target = view.inShell() && !session.isLoggedIn() ? ViewId.LOGIN : view;
+        FXMLLoader loader = loader(target.resourcePath());
+        Parent content = load(loader);
+        if (target.inShell()) {
+            shell.show(target, content);
             page.getChildren().setAll(shellView);
         } else {
             page.getChildren().setAll(content);
         }
+        return loader.getController();
     }
 
-    private static FXMLLoader loader(String path) {
-        return new FXMLLoader(resource(path));
+    /** Starts a session for {@code user}: fills the shell for their role and opens the home screen. */
+    public void startSession(User user) {
+        session.login(user);
+        shell.setUser(user.getFullName(), user.getRole().displayName());
+        shell.setNavigation(ViewId.sidebarItems(user.getRole()), this::goTo);
+        goTo(ViewId.HOME);
+    }
+
+    /** Ends the session and returns to the login screen. */
+    public void logout() {
+        session.logout();
+        goTo(ViewId.LOGIN);
+    }
+
+    private FXMLLoader loader(String path) {
+        FXMLLoader loader = new FXMLLoader(resource(path));
+        loader.setControllerFactory(this::createController);
+        return loader;
+    }
+
+    private Object createController(Class<?> type) {
+        try {
+            try {
+                return type.getConstructor(ViewContext.class).newInstance(context);
+            } catch (NoSuchMethodException noContextConstructor) {
+                return type.getConstructor().newInstance();
+            }
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Could not create view controller " + type.getName(), e);
+        }
     }
 
     private static Parent load(FXMLLoader loader) {
