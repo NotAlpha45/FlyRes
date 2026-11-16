@@ -73,12 +73,14 @@ backend/                       business and data layers
   src/main/resources/db/       schema.sql, seed.sql
 frontend/                      presentation layer (JavaFX)
   com.flyres.ui                Launcher (main), FlyResApp (Application)
-  com.flyres.ui.navigation     SceneRouter, ViewId
+  com.flyres.ui                Launcher, FlyResApp, AppSession (the logged-in user)
+  com.flyres.ui.navigation     SceneRouter, ViewId, ViewContext
   com.flyres.ui.component      Toasts, ConfirmDialog, FormValidator
   com.flyres.ui.view.*         <<boundary>> *ViewController classes, grouped by feature (shell/ is the app frame)
   src/main/resources/com/flyres/ui/
     fxml/                      one FXML file per screen, mirroring ui.view.*
     css/flyres.css             app styles on top of AtlantaFX Primer Light
+docs/adr/                      Architecture Decision Records: one per feature, explaining what and why
 docs/diagrams/                 PlantUML sources for the design document's UML diagrams
 gradle/libs.versions.toml      every dependency version, in one place
 ```
@@ -123,6 +125,7 @@ Work happens on issues `FLY-01` to `FLY-26`.
 4. Write tests alongside the control code (see [Testing](#testing)).
 5. Run `./gradlew build`. Then reset the database and run `./gradlew run`, and walk through every acceptance criterion by hand.
 6. If you added a class or a public control method, update `docs/diagrams/class-diagram.puml`.
+   Write the feature's ADR in `docs/adr/` (see [docs/adr/README.md](docs/adr/README.md)): what the feature does, how it is built, and why, with the options considered.
 7. Commit messages follow the form `FLY-<nn>: <imperative summary>`, for example `FLY-14: book flight in a single transaction`.
 8. Open a PR with `Closes #<issue>` and the acceptance checklist ticked.
 

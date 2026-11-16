@@ -6,8 +6,75 @@ hide empty members
 package "com.flyres" {
   class FlyResBackend <<facade>> {
     + FlyResBackend(database : DatabaseManager)
+    + FlyResBackend(database : DatabaseManager, clock : Clock)
     + {static} create() : FlyResBackend
+    + authentication() : AuthenticationController
     + close() : void
+  }
+}
+
+package "com.flyres.control" {
+  class AuthenticationController <<control>> {
+    + {static} LOGIN_FAILED : String
+    + AuthenticationController(users : UserRepository, hasher : PasswordHasher, clock : Clock)
+    + login(email : String, password : String) : User
+    + registerCustomer(request : RegistrationRequest) : Customer
+  }
+  class RegistrationRequest <<record>> {
+    firstName : String
+    lastName : String
+    email : String
+    phone : String
+    password : String
+    confirmPassword : String
+  }
+}
+
+package "com.flyres.domain.user" {
+  abstract class User <<entity>> {
+    - id : long
+    - email : String
+    - firstName : String
+    - lastName : String
+    - phone : String
+    - createdAt : LocalDateTime
+    + {abstract} getRole() : Role
+    + getFullName() : String
+    + hasRole(role : Role) : boolean
+  }
+  class Customer <<entity>>
+  class FlightAgent <<entity>>
+  class Administrator <<entity>>
+  enum Role <<entity>> {
+    CUSTOMER
+    AGENT
+    ADMIN
+    + displayName() : String
+  }
+  class UserFactory <<factory>> {
+    + {static} create(role : Role, id : long, email : String, firstName : String, lastName : String, phone : String, createdAt : LocalDateTime) : User
+  }
+}
+
+package "com.flyres.repository" {
+  interface UserRepository {
+    + findById(id : long) : Optional<User>
+    + findCredentialsByEmail(email : String) : Optional<UserCredentials>
+    + existsByEmail(email : String) : boolean
+    + insert(user : NewUser) : User
+  }
+  class UserCredentials <<record>> {
+    user : User
+    password : PasswordHash
+  }
+  class NewUser <<record>> {
+    role : Role
+    email : String
+    firstName : String
+    lastName : String
+    phone : String
+    password : PasswordHash
+    createdAt : LocalDateTime
   }
 }
 
@@ -30,22 +97,82 @@ package "com.flyres.data" {
   }
 }
 
+package "com.flyres.data.sqlite" {
+  class SqliteUserRepository {
+    + SqliteUserRepository(database : DatabaseManager)
+  }
+}
+
 package "com.flyres.common.exception" {
   class DataAccessException
+  class ValidationException {
+    + getField() : String
+    + getFieldErrors() : Map<String, String>
+  }
+  class NotFoundException
+  class AccessDeniedException
+  class BookingException
   RuntimeException <|-- DataAccessException
+  RuntimeException <|-- ValidationException
+  RuntimeException <|-- NotFoundException
+  RuntimeException <|-- AccessDeniedException
+  RuntimeException <|-- BookingException
+}
+
+package "com.flyres.common.security" {
+  class PasswordHasher {
+    + hash(password : String) : PasswordHash
+    + verify(password : String, stored : PasswordHash) : boolean
+  }
+  class PasswordHash <<record>> {
+    hash : String
+    salt : String
+  }
+}
+
+package "com.flyres.common.validation" {
+  class Validators <<utility>> {
+    + {static} isBlank(value : String) : boolean
+    + {static} isEmail(value : String) : boolean
+    + {static} isStrongPassword(value : String) : boolean
+    + {static} isPhone(value : String) : boolean
+    + {static} normalizeEmail(email : String) : String
+    + {static} trimToNull(value : String) : String
+  }
+  class ValidationErrors {
+    + add(field : String, message : String) : ValidationErrors
+    + has(field : String) : boolean
+    + throwIfAny() : void
+  }
 }
 
 package "com.flyres.ui" {
   class FlyResApp
   class Launcher
+  class AppSession {
+    + login(user : User) : void
+    + logout() : void
+    + isLoggedIn() : boolean
+    + currentUser() : Optional<User>
+    + requireUser() : User
+  }
 }
 
 package "com.flyres.ui.navigation" {
   class SceneRouter {
-    + SceneRouter(stage : Stage)
-    + goTo(view : ViewId) : void
+    + SceneRouter(stage : Stage, backend : FlyResBackend, session : AppSession)
+    + goTo(view : ViewId) : C
+    + startSession(user : User) : void
+    + logout() : void
+  }
+  class ViewContext <<record>> {
+    backend : FlyResBackend
+    session : AppSession
+    router : SceneRouter
   }
   enum ViewId {
+    LOGIN
+    REGISTER
     HOME
     COMPONENT_DEMO
     + title() : String
@@ -73,7 +200,19 @@ package "com.flyres.ui.component" {
 package "com.flyres.ui.view.shell" {
   class AppShellViewController <<boundary>> {
     + setNavigation(views : List<ViewId>, onSelect : Consumer<ViewId>) : void
+    + setUser(name : String, role : String) : void
+    + setOnLogout(onLogout : Runnable) : void
     + show(view : ViewId, page : Node) : void
+  }
+}
+
+package "com.flyres.ui.view.auth" {
+  class LoginViewController <<boundary>> {
+    + LoginViewController(context : ViewContext)
+    + prefillEmail(email : String) : void
+  }
+  class RegisterViewController <<boundary>> {
+    + RegisterViewController(context : ViewContext)
   }
 }
 
@@ -81,16 +220,61 @@ package "com.flyres.ui.view.demo" {
   class ComponentDemoViewController <<boundary>>
 }
 
+' ---------- Backend ----------
 FlyResBackend --> DatabaseManager
+FlyResBackend --> AuthenticationController
+FlyResBackend ..> SqliteUserRepository : creates
 TransactionRunner --> DatabaseManager
 TransactionRunner ..> DataAccessException : throws
+
+AuthenticationController --> UserRepository
+AuthenticationController --> PasswordHasher
+AuthenticationController ..> RegistrationRequest
+AuthenticationController ..> ValidationErrors
+AuthenticationController ..> Validators
+AuthenticationController ..> ValidationException : throws
+AuthenticationController ..> NewUser : creates
+
+User <|-- Customer
+User <|-- FlightAgent
+User <|-- Administrator
+User ..> Role
+UserFactory ..> User : creates
+
+UserRepository <|.. SqliteUserRepository
+UserRepository ..> UserCredentials
+UserRepository ..> NewUser
+UserCredentials --> User
+UserCredentials --> PasswordHash
+NewUser --> PasswordHash
+SqliteUserRepository --> DatabaseManager
+SqliteUserRepository ..> UserFactory
+SqliteUserRepository ..> DataAccessException : throws
+PasswordHasher ..> PasswordHash
+ValidationErrors ..> ValidationException : throws
+
+' ---------- Frontend ----------
 Launcher ..> FlyResApp : launches
 FlyResApp --> FlyResBackend
 FlyResApp ..> SceneRouter
+FlyResApp ..> AppSession : creates
+SceneRouter --> AppSession
+SceneRouter --> ViewContext
 SceneRouter ..> ViewId
 SceneRouter --> AppShellViewController
 SceneRouter ..> Toasts : installs
+ViewContext --> FlyResBackend
+ViewContext --> AppSession
+AppSession --> User
+ViewId ..> Role
 AppShellViewController ..> ViewId
+LoginViewController --> ViewContext
+LoginViewController --> FormValidator
+LoginViewController ..> AuthenticationController : login
+RegisterViewController --> ViewContext
+RegisterViewController --> FormValidator
+RegisterViewController ..> Toasts
+RegisterViewController ..> AuthenticationController : registerCustomer
 ComponentDemoViewController ..> Toasts
 ComponentDemoViewController ..> ConfirmDialog
 ComponentDemoViewController --> FormValidator
