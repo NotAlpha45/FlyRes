@@ -1,8 +1,14 @@
 package com.flyres.ui.view.demo;
 
+import com.flyres.domain.flight.Seat;
+import com.flyres.domain.flight.SeatAvailability;
 import com.flyres.ui.component.ConfirmDialog;
 import com.flyres.ui.component.FormValidator;
+import com.flyres.ui.component.SeatMapView;
 import com.flyres.ui.component.Toasts;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -30,6 +36,9 @@ public class ComponentDemoViewController {
             new SampleFlight("F8601", "YYC → YYZ", "In 3 days 06:45", "$219.00"),
             new SampleFlight("AC405", "YYZ → YUL", "In 5 days 11:00", "$169.00"));
 
+    private static final int SAMPLE_ROWS = 6;
+    private static final int SAMPLE_SEATS_PER_ROW = 6;
+
     @FXML
     private TextField nameField;
     @FXML
@@ -52,6 +61,10 @@ public class ComponentDemoViewController {
     private TableColumn<SampleFlight, String> departureColumn;
     @FXML
     private TableColumn<SampleFlight, String> priceColumn;
+    @FXML
+    private SeatMapView seatMap;
+    @FXML
+    private Label seatSelection;
 
     private FormValidator form;
 
@@ -70,6 +83,25 @@ public class ComponentDemoViewController {
         emptyState.getStyleClass().add("empty-state");
         flightTable.setPlaceholder(emptyState);
         flightTable.setItems(SAMPLE_FLIGHTS);
+
+        seatMap.setSeats(SAMPLE_ROWS, SAMPLE_SEATS_PER_ROW, sampleSeats());
+        seatSelection.setText("Pick a seat");
+        seatMap.selectedSeatProperty().addListener((observable, previous, seat) ->
+                seatSelection.setText(seat == null ? "Pick a seat" : "Selected " + seat.label()));
+    }
+
+    /** A 6 × 6 cabin (3–3) with a few seats already taken. */
+    private static List<SeatAvailability> sampleSeats() {
+        Set<String> taken = Set.of("1A", "1B", "2C", "3D", "3E", "5F");
+        List<SeatAvailability> seats = new ArrayList<>();
+        long id = 1;
+        for (int row = 1; row <= SAMPLE_ROWS; row++) {
+            for (int column = 0; column < SAMPLE_SEATS_PER_ROW; column++) {
+                String label = row + String.valueOf((char) ('A' + column));
+                seats.add(new SeatAvailability(new Seat(id++, 0, label), taken.contains(label)));
+            }
+        }
+        return seats;
     }
 
     @FXML

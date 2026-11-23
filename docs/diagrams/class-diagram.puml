@@ -30,10 +30,12 @@ package "com.flyres.control" {
     confirmPassword : String
   }
   class FlightSearchController <<control>> {
-    + FlightSearchController(flights : FlightRepository, airports : AirportRepository, airlines : AirlineRepository, clock : Clock)
+    + {static} FLIGHT_UNAVAILABLE : String
+    + FlightSearchController(flights : FlightRepository, seats : SeatRepository, airports : AirportRepository, airlines : AirlineRepository, clock : Clock)
     + listAirports(actor : User) : List<Airport>
     + listAirlines(actor : User) : List<Airline>
     + searchFlights(actor : User, criteria : SearchCriteria) : List<FlightSummary>
+    + getFlightDetails(actor : User, flightId : long) : FlightDetails
   }
   class Access <<utility>> {
     ~ {static} require(actor : User, action : String, allowed : Role...) : void
@@ -68,6 +70,20 @@ package "com.flyres.domain.flight" {
     id : long
     flightId : long
     label : String
+    + {static} MAP_ORDER : Comparator<Seat>
+    + row() : int
+    + letter() : char
+    + column() : int
+  }
+  class SeatAvailability <<record>> {
+    taken : boolean
+  }
+  class FlightDetails <<record>> {
+    seatRows : int
+    seatsPerRow : int
+    + {static} of(flight : Flight, seats : List<SeatAvailability>) : FlightDetails
+    + availableCount() : int
+    + isSoldOut() : boolean
   }
   class Flight <<entity>> {
     - id : long
@@ -135,6 +151,10 @@ package "com.flyres.repository" {
     + findAll() : List<Airline>
     + findByCode(code : String) : Optional<Airline>
   }
+  interface SeatRepository {
+    + findByFlight(flightId : long) : List<SeatAvailability>
+    + findById(seatId : long) : Optional<Seat>
+  }
   interface FlightRepository {
     + search(originCode : String, destinationCode : String, from : LocalDateTime, toExclusive : LocalDateTime, airlineCode : String) : List<FlightSummary>
     + findById(id : long) : Optional<Flight>
@@ -180,6 +200,7 @@ package "com.flyres.data.sqlite" {
   class SqliteAirportRepository
   class SqliteAirlineRepository
   class SqliteFlightRepository
+  class SqliteSeatRepository
 }
 
 package "com.flyres.common.exception" {
@@ -254,6 +275,7 @@ package "com.flyres.ui.navigation" {
     REGISTER
     HOME
     FLIGHT_SEARCH
+    FLIGHT_DETAILS
     COMPONENT_DEMO
     + title() : String
   }
@@ -284,6 +306,14 @@ package "com.flyres.ui.component" {
     + setEmptyMessage(message : String) : void
     + addActionColumn(buttonText : String, action : Consumer<FlightSummary>, disabledReason : String) : void
   }
+  class SeatMapView {
+    + setSeats(seatRows : int, seatsPerRow : int, seats : List<SeatAvailability>) : void
+    + selectedSeatProperty() : ReadOnlyObjectProperty<Seat>
+    + getSelectedSeat() : Seat
+    + clearSelection() : void
+    + setHighlightedSeat(seat : Seat) : void
+    + setReadOnly(readOnly : boolean) : void
+  }
   class Formats <<utility>> {
     + {static} money(cents : long) : String
     + {static} date(date : LocalDate) : String
@@ -296,6 +326,11 @@ package "com.flyres.ui.component" {
 package "com.flyres.ui.view.search" {
   class FlightSearchViewController <<boundary>> {
     + FlightSearchViewController(context : ViewContext)
+    + restore(criteria : SearchCriteria) : void
+  }
+  class FlightDetailsViewController <<boundary>> {
+    + FlightDetailsViewController(context : ViewContext)
+    + showFlight(flightId : long, searchToRestore : SearchCriteria) : void
   }
 }
 
@@ -372,6 +407,15 @@ SqliteFlightRepository --> DatabaseManager
 SqliteAirportRepository --> DatabaseManager
 SqliteAirlineRepository --> DatabaseManager
 FlightRepository ..> FlightSummary
+FlyResBackend ..> SqliteSeatRepository : creates
+FlightSearchController --> SeatRepository
+FlightSearchController ..> FlightDetails : creates
+SeatRepository <|.. SqliteSeatRepository
+SqliteSeatRepository --> DatabaseManager
+SeatRepository ..> SeatAvailability
+FlightDetails --> "1" Flight
+FlightDetails "1" *-- "*" SeatAvailability
+SeatAvailability --> "1" Seat
 
 Aircraft "*" --> "1" Airline : operated by
 Route "*" --> "1" Airport : origin
@@ -415,4 +459,11 @@ FlightSearchViewController --> FlightTable
 FlightSearchViewController ..> FlightSearchController : searchFlights
 FlightTable ..> FlightSummary
 FlightTable ..> Formats
+FlightSearchViewController ..> FlightDetailsViewController : opens
+FlightDetailsViewController --> ViewContext
+FlightDetailsViewController --> SeatMapView
+FlightDetailsViewController ..> FlightSearchController : getFlightDetails
+FlightDetailsViewController ..> FlightSearchViewController : restore
+SeatMapView ..> SeatAvailability
+ComponentDemoViewController --> SeatMapView
 @enduml

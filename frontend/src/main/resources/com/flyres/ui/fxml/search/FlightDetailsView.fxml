@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.flyres.ui.component.SeatMapView?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- One flight's details and seat map, opened from a search result. -->
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.flyres.ui.view.search.FlightDetailsViewController"
+      styleClass="page">
+
+    <HBox styleClass="button-row">
+        <Button text="← Back to results" onAction="#onBack" styleClass="flat"/>
+    </HBox>
+
+    <VBox styleClass="card">
+        <HBox styleClass="card-header">
+            <Label fx:id="titleLabel" styleClass="card-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="priceLabel" styleClass="flight-price"/>
+        </HBox>
+        <Label fx:id="routeLabel" styleClass="flight-route"/>
+        <HBox styleClass="detail-row">
+            <VBox styleClass="detail-item">
+                <Label text="Departs" styleClass="text-muted"/>
+                <Label fx:id="departsLabel" styleClass="detail-value"/>
+            </VBox>
+            <VBox styleClass="detail-item">
+                <Label text="Arrives" styleClass="text-muted"/>
+                <Label fx:id="arrivesLabel" styleClass="detail-value"/>
+            </VBox>
+            <VBox styleClass="detail-item">
+                <Label text="Duration" styleClass="text-muted"/>
+                <Label fx:id="durationLabel" styleClass="detail-value"/>
+            </VBox>
+            <VBox styleClass="detail-item">
+                <Label text="Aircraft" styleClass="text-muted"/>
+                <Label fx:id="aircraftLabel" styleClass="detail-value"/>
+            </VBox>
+            <VBox styleClass="detail-item">
+                <Label text="Seats left" styleClass="text-muted"/>
+                <Label fx:id="seatsLeftLabel" styleClass="detail-value"/>
+            </VBox>
+        </HBox>
+    </VBox>
+
+    <VBox styleClass="card">
+        <HBox styleClass="card-header">
+            <Label text="Choose a seat" styleClass="card-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="Refresh seats" onAction="#onRefresh"/>
+        </HBox>
+        <Label fx:id="soldOutLabel" text="This flight is sold out." styleClass="sold-out"/>
+        <SeatMapView fx:id="seatMap"/>
+        <HBox styleClass="button-row">
+            <Label fx:id="selectionLabel" styleClass="selection-summary"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <StackPane fx:id="continueHolder">
+                <Button fx:id="continueButton" text="Continue" styleClass="accent" disable="true"/>
+            </StackPane>
+        </HBox>
+    </VBox>
+</VBox>
