@@ -192,6 +192,39 @@
     -fx-alignment: top-left;
 }
 
+/* ---------- Flight details ---------- */
+
+.flight-price {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-accent-fg;
+}
+
+.flight-route {
+    -fx-font-size: 16px;
+}
+
+.detail-row {
+    -fx-spacing: 32px;
+}
+
+.detail-item {
+    -fx-spacing: 8px;
+}
+
+.detail-value {
+    -fx-font-weight: bold;
+}
+
+.sold-out {
+    -fx-text-fill: -color-danger-fg;
+    -fx-font-weight: bold;
+}
+
+.selection-summary {
+    -fx-font-weight: bold;
+}
+
 /* ---------- Seat map ---------- */
 
 .seat-map {

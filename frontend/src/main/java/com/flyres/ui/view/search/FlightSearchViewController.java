@@ -16,6 +16,7 @@ import com.flyres.ui.component.FlightTable;
 import com.flyres.ui.component.FormValidator;
 import com.flyres.ui.component.Formats;
 import com.flyres.ui.navigation.ViewContext;
+import com.flyres.ui.navigation.ViewId;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +30,7 @@ import javafx.util.StringConverter;
 /**
  * &lt;&lt;boundary&gt;&gt; Flight search for customers and agents. Reads the form, calls
  * {@link FlightSearchController#searchFlights} once and shows the results or the field errors.
+ * Select opens the flight's details and seat map.
  */
 public class FlightSearchViewController {
 
@@ -36,7 +38,6 @@ public class FlightSearchViewController {
     private static final Airline ALL_AIRLINES = new Airline(0, "", "All airlines");
 
     private static final String START_MESSAGE = "Choose where you are flying from and to, then search.";
-    private static final String SELECT_COMING_SOON = "Seat selection and booking are coming soon.";
 
     @FXML
     private ComboBox<Airport> originBox;
@@ -61,6 +62,8 @@ public class FlightSearchViewController {
 
     private final ViewContext context;
     private FormValidator form;
+    /** The last search that ran, so the details screen can come back to it. */
+    private SearchCriteria lastSearch;
 
     public FlightSearchViewController(ViewContext context) {
         this.context = context;
@@ -102,7 +105,27 @@ public class FlightSearchViewController {
         });
 
         resultsTable.setEmptyMessage(START_MESSAGE);
-        resultsTable.addActionColumn("Select", summary -> { }, SELECT_COMING_SOON);
+        resultsTable.addActionColumn("Select", this::openFlight, null);
+    }
+
+    /** Fills the form with {@code criteria} and runs the search again, e.g. when coming back from details. */
+    public void restore(SearchCriteria criteria) {
+        originBox.setValue(findAirport(criteria.originCode()));
+        destinationBox.setValue(findAirport(criteria.destinationCode()));
+        datePicker.setValue(criteria.date());
+        airlineBox.setValue(airlineBox.getItems().stream()
+                .filter(airline -> airline.code().equals(criteria.airlineCode() == null ? "" : criteria.airlineCode()))
+                .findFirst().orElse(ALL_AIRLINES));
+        onSearch();
+    }
+
+    private void openFlight(FlightSummary summary) {
+        FlightDetailsViewController details = context.router().goTo(ViewId.FLIGHT_DETAILS);
+        details.showFlight(summary.flight().getId(), lastSearch);
+    }
+
+    private Airport findAirport(String code) {
+        return originBox.getItems().stream().filter(airport -> airport.code().equals(code)).findFirst().orElse(null);
     }
 
     @FXML
@@ -116,6 +139,7 @@ public class FlightSearchViewController {
         try {
             List<FlightSummary> results = context.backend().flightSearch()
                     .searchFlights(context.session().requireUser(), criteria);
+            lastSearch = criteria;
             showResults(results);
         } catch (ValidationException e) {
             e.getFieldErrors().forEach(form::showError);
