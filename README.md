@@ -74,7 +74,7 @@ backend/                       business and data layers
 frontend/                      presentation layer (JavaFX)
   com.flyres.ui                Launcher (main), FlyResApp (Application), AppSession (the logged-in user)
   com.flyres.ui.navigation     SceneRouter, ViewId, ViewContext
-  com.flyres.ui.component      Toasts, ConfirmDialog, FormValidator, ErrorReporter, FlightTable, Formats
+  com.flyres.ui.component      Toasts, ConfirmDialog, FormValidator, ErrorReporter, FlightTable, SeatMapView, Formats
   com.flyres.ui.view.*         <<boundary>> *ViewController classes, grouped by feature (shell/ is the app frame)
   src/main/resources/com/flyres/ui/
     fxml/                      one FXML file per screen, mirroring ui.view.*
@@ -159,6 +159,7 @@ The **Components** screen in the sidebar shows every shared piece: cards, button
 | Empty list | `table.setPlaceholder(label)` with style class `empty-state` |
 | Unexpected error | nothing to do: `ErrorReporter` shows a generic toast and logs it |
 | List of flights | `FlightTable` (`setEmptyMessage`, `addActionColumn` for a per-row button) |
+| Pick or show seats | `SeatMapView` (`setSeats`, `selectedSeatProperty`, `setHighlightedSeat` for "your seat", `setReadOnly`) |
 | Money, dates, durations | `Formats.money(cents)`, `Formats.dateTime(...)`, `Formats.duration(...)`; never format in the backend |
 
 #### Adding a screen
