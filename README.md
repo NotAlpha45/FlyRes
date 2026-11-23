@@ -72,10 +72,9 @@ backend/                       business and data layers
   com.flyres.common.*          exception/, security/, validation/
   src/main/resources/db/       schema.sql, seed.sql
 frontend/                      presentation layer (JavaFX)
-  com.flyres.ui                Launcher (main), FlyResApp (Application)
-  com.flyres.ui                Launcher, FlyResApp, AppSession (the logged-in user)
+  com.flyres.ui                Launcher (main), FlyResApp (Application), AppSession (the logged-in user)
   com.flyres.ui.navigation     SceneRouter, ViewId, ViewContext
-  com.flyres.ui.component      Toasts, ConfirmDialog, FormValidator
+  com.flyres.ui.component      Toasts, ConfirmDialog, FormValidator, ErrorReporter
   com.flyres.ui.view.*         <<boundary>> *ViewController classes, grouped by feature (shell/ is the app frame)
   src/main/resources/com/flyres/ui/
     fxml/                      one FXML file per screen, mirroring ui.view.*
@@ -116,7 +115,7 @@ The set of control classes is fixed: `AuthenticationController`, `FlightSearchCo
 
 ## Developing a feature
 
-Work happens on issues `FLY-01` to `FLY-26`.
+Work happens on GitHub issues titled `FLY-nn`, grouped into milestones (see the [issues](https://github.com/NotAlpha45/FlyRes/issues) and [milestones](https://github.com/NotAlpha45/FlyRes/milestones)). Each issue is labelled **Core Feature**, **Enhancement** or **Bug**. A `FLY-nn` number is not the same as the GitHub issue number (`#nn`), so check both.
 
 1. Read the issue and its acceptance criteria. Check that its dependencies are merged.
 2. Branch from `master`: `feature/FLY-<nn>-short-name`.
