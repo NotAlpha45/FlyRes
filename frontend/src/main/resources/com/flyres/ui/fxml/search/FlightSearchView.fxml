@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.flyres.ui.component.FlightTable?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Tooltip?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Search for upcoming flights by origin, destination, optional date and optional airline. -->
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.flyres.ui.view.search.FlightSearchViewController"
+      styleClass="page">
+
+    <VBox styleClass="card">
+        <Label text="Find a flight" styleClass="card-title"/>
+
+        <HBox styleClass="form-row,search-form">
+            <VBox styleClass="form-field" HBox.hgrow="ALWAYS">
+                <Label text="From" styleClass="field-label"/>
+                <ComboBox fx:id="originBox" promptText="Choose origin" maxWidth="Infinity"/>
+                <Label fx:id="originError" styleClass="field-error" wrapText="true"/>
+            </VBox>
+
+            <VBox styleClass="form-field">
+                <Label text=" " styleClass="field-label"/>
+                <Button fx:id="swapButton" text="Swap" onAction="#onSwap" minWidth="-Infinity">
+                    <tooltip>
+                        <Tooltip text="Swap origin and destination"/>
+                    </tooltip>
+                </Button>
+            </VBox>
+
+            <VBox styleClass="form-field" HBox.hgrow="ALWAYS">
+                <Label text="To" styleClass="field-label"/>
+                <ComboBox fx:id="destinationBox" promptText="Choose destination" maxWidth="Infinity"/>
+                <Label fx:id="destinationError" styleClass="field-error" wrapText="true"/>
+            </VBox>
+
+            <VBox styleClass="form-field" HBox.hgrow="ALWAYS">
+                <Label text="Date (optional)" styleClass="field-label"/>
+                <DatePicker fx:id="datePicker" promptText="Any date" maxWidth="Infinity"/>
+                <Label fx:id="dateError" styleClass="field-error" wrapText="true"/>
+            </VBox>
+
+            <VBox styleClass="form-field" HBox.hgrow="ALWAYS">
+                <Label text="Airline" styleClass="field-label"/>
+                <ComboBox fx:id="airlineBox" maxWidth="Infinity"/>
+                <Label fx:id="airlineError" styleClass="field-error" wrapText="true"/>
+            </VBox>
+        </HBox>
+
+        <HBox styleClass="button-row">
+            <Button text="Search" onAction="#onSearch" styleClass="accent" defaultButton="true"/>
+            <Button text="Any date" onAction="#onClearDate" styleClass="flat"/>
+        </HBox>
+    </VBox>
+
+    <VBox styleClass="card">
+        <Label fx:id="resultsTitle" text="Results" styleClass="card-title"/>
+        <FlightTable fx:id="resultsTable"/>
+    </VBox>
+</VBox>

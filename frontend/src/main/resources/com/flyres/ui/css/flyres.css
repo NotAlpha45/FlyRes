@@ -187,6 +187,11 @@
     -fx-spacing: 16px;
 }
 
+/* Flight search: fields stay top-aligned when one shows an inline error. */
+.search-form {
+    -fx-alignment: top-left;
+}
+
 /* ---------- Tables and empty states ---------- */
 
 .data-table {
