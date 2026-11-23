@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import com.flyres.ui.component.PaymentForm?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.Label?>
@@ -46,6 +47,16 @@
             </HBox>
         </VBox>
     </HBox>
+
+    <VBox styleClass="card">
+        <Label text="Payment form" styleClass="card-title"/>
+        <Label text="Calls the real PaymentController but saves nothing. 4242 4242 4242 4242 is approved; any number ending in 0002 is declined."
+               wrapText="true" styleClass="text-muted"/>
+        <PaymentForm fx:id="paymentForm"/>
+        <HBox styleClass="button-row">
+            <Button fx:id="payButton" text="Pay $189.00 (demo)" onAction="#onDemoPay" styleClass="accent"/>
+        </HBox>
+    </VBox>
 
     <VBox styleClass="card">
         <HBox styleClass="card-header">

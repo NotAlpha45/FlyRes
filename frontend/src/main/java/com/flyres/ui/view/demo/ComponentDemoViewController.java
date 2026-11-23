@@ -1,8 +1,15 @@
 package com.flyres.ui.view.demo;
 
+import com.flyres.common.exception.AccessDeniedException;
+import com.flyres.common.exception.BookingException;
+import com.flyres.common.exception.ValidationException;
+import com.flyres.domain.booking.Payment;
 import com.flyres.ui.component.ConfirmDialog;
 import com.flyres.ui.component.FormValidator;
+import com.flyres.ui.component.Formats;
+import com.flyres.ui.component.PaymentForm;
 import com.flyres.ui.component.Toasts;
+import com.flyres.ui.navigation.ViewContext;
 import java.util.function.Function;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -16,10 +23,41 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 
 /**
- * Drives the component demo screen. It uses static sample data and no backend, so the
- * "required field" checks here stand in for errors that real screens get from a control.
+ * Drives the component demo screen. It uses static sample data, so the "required field" checks
+ * here stand in for errors that real screens get from a control. The payment form is the exception:
+ * it calls the real {@code PaymentController.processPayment}, which validates and authorizes a card
+ * but saves nothing.
  */
 public class ComponentDemoViewController {
+
+    private static final long DEMO_AMOUNT_CENTS = 18900;
+
+    private final ViewContext context;
+
+    @FXML
+    private PaymentForm paymentForm;
+    @FXML
+    private Button payButton;
+
+    public ComponentDemoViewController(ViewContext context) {
+        this.context = context;
+    }
+
+    @FXML
+    private void onDemoPay() {
+        paymentForm.clearErrors();
+        try {
+            Payment payment = context.backend().payments()
+                    .processPayment(context.session().requireUser(), paymentForm.toDetails(), DEMO_AMOUNT_CENTS);
+            Toasts.success(payButton, "Approved: " + Formats.money(payment.getAmountCents()) + " on the card ending "
+                    + payment.getCardLast4() + ". Demo only, nothing was saved.");
+        } catch (ValidationException e) {
+            paymentForm.showErrors(e.getFieldErrors());
+        } catch (BookingException | AccessDeniedException e) {
+            paymentForm.clearCvv();
+            Toasts.error(payButton, e.getMessage());
+        }
+    }
 
     private record SampleFlight(String number, String route, String departure, String price) {
     }
