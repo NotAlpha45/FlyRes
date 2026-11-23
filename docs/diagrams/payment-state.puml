@@ -1,0 +1,29 @@
+@startuml payment-state
+' State of a Payment (domain.booking.Payment). Every transition is a method on Payment;
+' any transition not drawn here throws IllegalStateException. Keep in sync with PaymentTest.
+hide empty description
+
+[*] --> INITIATED : Payment.initiate(holder, last4, amount)\n[card details valid]
+
+INITIATED --> AUTHORIZED : authorize()\n[issuer approves]
+INITIATED --> FAILED : fail()\n[issuer declines: number ends in 0002]
+AUTHORIZED --> COMPLETED : complete(paidAt)
+AUTHORIZED --> FAILED : fail()
+COMPLETED --> REFUNDED : refund(refundedAt)\n[reservation cancelled or flight archived]
+
+FAILED --> [*] : nothing is saved
+COMPLETED --> [*] : saved with its reservation
+REFUNDED --> [*]
+
+note right of INITIATED
+  In memory only. Invalid card details
+  (Luhn, expiry, CVV, name) fail validation
+  before a Payment is created.
+end note
+
+note right of COMPLETED
+  Only COMPLETED and REFUNDED are stored
+  (payments.status CHECK). Stored: cardholder
+  name, last 4 digits, amount, timestamps.
+end note
+@enduml

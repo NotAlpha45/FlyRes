@@ -342,6 +342,17 @@
     -fx-padding: 24px;
 }
 
+/* ---------- Payment form ---------- */
+
+.payment-form {
+    -fx-spacing: 16px;
+    -fx-max-width: 480px;
+}
+
+.expiry-inputs {
+    -fx-spacing: 8px;
+}
+
 /* ---------- Toasts ---------- */
 
 .toast-layer {
