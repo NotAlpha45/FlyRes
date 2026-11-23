@@ -9,6 +9,7 @@ package "com.flyres" {
     + FlyResBackend(database : DatabaseManager, clock : Clock)
     + {static} create() : FlyResBackend
     + authentication() : AuthenticationController
+    + flightSearch() : FlightSearchController
     + close() : void
   }
 }
@@ -27,6 +28,69 @@ package "com.flyres.control" {
     phone : String
     password : String
     confirmPassword : String
+  }
+  class FlightSearchController <<control>> {
+    + FlightSearchController(flights : FlightRepository, airports : AirportRepository, airlines : AirlineRepository, clock : Clock)
+    + listAirports(actor : User) : List<Airport>
+    + listAirlines(actor : User) : List<Airline>
+    + searchFlights(actor : User, criteria : SearchCriteria) : List<FlightSummary>
+  }
+  class Access <<utility>> {
+    ~ {static} require(actor : User, action : String, allowed : Role...) : void
+  }
+}
+
+package "com.flyres.domain.flight" {
+  class Airport <<entity>> <<record>> {
+    id : long
+    code : String
+    name : String
+    city : String
+    country : String
+  }
+  class Airline <<entity>> <<record>> {
+    id : long
+    code : String
+    name : String
+  }
+  class Aircraft <<entity>> <<record>> {
+    id : long
+    registration : String
+    model : String
+    seatRows : int
+    seatsPerRow : int
+    + capacity() : int
+  }
+  class Route <<entity>> <<record>> {
+    id : long
+  }
+  class Seat <<entity>> <<record>> {
+    id : long
+    flightId : long
+    label : String
+  }
+  class Flight <<entity>> {
+    - id : long
+    - flightNumber : String
+    - departureTime : LocalDateTime
+    - arrivalTime : LocalDateTime
+    - priceCents : long
+    + isDeparted(clock : Clock) : boolean
+    + duration() : Duration
+    + airline() : Airline
+  }
+  enum FlightStatus <<entity>> {
+    SCHEDULED
+    ARCHIVED
+  }
+  class SearchCriteria <<record>> {
+    originCode : String
+    destinationCode : String
+    date : LocalDate
+    airlineCode : String
+  }
+  class FlightSummary <<record>> {
+    availableSeats : int
   }
 }
 
@@ -62,6 +126,18 @@ package "com.flyres.repository" {
     + findCredentialsByEmail(email : String) : Optional<UserCredentials>
     + existsByEmail(email : String) : boolean
     + insert(user : NewUser) : User
+  }
+  interface AirportRepository {
+    + findAll() : List<Airport>
+    + findByCode(code : String) : Optional<Airport>
+  }
+  interface AirlineRepository {
+    + findAll() : List<Airline>
+    + findByCode(code : String) : Optional<Airline>
+  }
+  interface FlightRepository {
+    + search(originCode : String, destinationCode : String, from : LocalDateTime, toExclusive : LocalDateTime, airlineCode : String) : List<FlightSummary>
+    + findById(id : long) : Optional<Flight>
   }
   class UserCredentials <<record>> {
     user : User
@@ -101,6 +177,9 @@ package "com.flyres.data.sqlite" {
   class SqliteUserRepository {
     + SqliteUserRepository(database : DatabaseManager)
   }
+  class SqliteAirportRepository
+  class SqliteAirlineRepository
+  class SqliteFlightRepository
 }
 
 package "com.flyres.common.exception" {
@@ -174,6 +253,7 @@ package "com.flyres.ui.navigation" {
     LOGIN
     REGISTER
     HOME
+    FLIGHT_SEARCH
     COMPONENT_DEMO
     + title() : String
   }
@@ -199,6 +279,23 @@ package "com.flyres.ui.component" {
     + clearErrors() : void
     + hasErrors() : boolean
     + focusFirstError() : void
+  }
+  class FlightTable {
+    + setEmptyMessage(message : String) : void
+    + addActionColumn(buttonText : String, action : Consumer<FlightSummary>, disabledReason : String) : void
+  }
+  class Formats <<utility>> {
+    + {static} money(cents : long) : String
+    + {static} date(date : LocalDate) : String
+    + {static} dateTime(dateTime : LocalDateTime) : String
+    + {static} arrivalTime(departure : LocalDateTime, arrival : LocalDateTime) : String
+    + {static} duration(duration : Duration) : String
+  }
+}
+
+package "com.flyres.ui.view.search" {
+  class FlightSearchViewController <<boundary>> {
+    + FlightSearchViewController(context : ViewContext)
   }
 }
 
@@ -258,6 +355,33 @@ SqliteUserRepository ..> DataAccessException : throws
 PasswordHasher ..> PasswordHash
 ValidationErrors ..> ValidationException : throws
 
+FlyResBackend --> FlightSearchController
+FlyResBackend ..> SqliteFlightRepository : creates
+FlyResBackend ..> SqliteAirportRepository : creates
+FlyResBackend ..> SqliteAirlineRepository : creates
+FlightSearchController --> FlightRepository
+FlightSearchController --> AirportRepository
+FlightSearchController --> AirlineRepository
+FlightSearchController ..> Access
+FlightSearchController ..> SearchCriteria
+FlightSearchController ..> ValidationErrors
+FlightRepository <|.. SqliteFlightRepository
+AirportRepository <|.. SqliteAirportRepository
+AirlineRepository <|.. SqliteAirlineRepository
+SqliteFlightRepository --> DatabaseManager
+SqliteAirportRepository --> DatabaseManager
+SqliteAirlineRepository --> DatabaseManager
+FlightRepository ..> FlightSummary
+
+Aircraft "*" --> "1" Airline : operated by
+Route "*" --> "1" Airport : origin
+Route "*" --> "1" Airport : destination
+Flight "*" --> "1" Route
+Flight "*" --> "1" Aircraft
+Flight --> FlightStatus
+Flight "1" *-- "1..*" Seat : seats
+FlightSummary --> "1" Flight
+
 ' ---------- Frontend ----------
 Launcher ..> FlyResApp : launches
 FlyResApp --> FlyResBackend
@@ -285,4 +409,10 @@ RegisterViewController ..> AuthenticationController : registerCustomer
 ComponentDemoViewController ..> Toasts
 ComponentDemoViewController ..> ConfirmDialog
 ComponentDemoViewController --> FormValidator
+FlightSearchViewController --> ViewContext
+FlightSearchViewController --> FormValidator
+FlightSearchViewController --> FlightTable
+FlightSearchViewController ..> FlightSearchController : searchFlights
+FlightTable ..> FlightSummary
+FlightTable ..> Formats
 @enduml
