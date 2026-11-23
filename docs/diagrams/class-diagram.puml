@@ -10,6 +10,7 @@ package "com.flyres" {
     + {static} create() : FlyResBackend
     + authentication() : AuthenticationController
     + flightSearch() : FlightSearchController
+    + payments() : PaymentController
     + close() : void
   }
 }
@@ -37,6 +38,61 @@ package "com.flyres.control" {
   }
   class Access <<utility>> {
     ~ {static} require(actor : User, action : String, allowed : Role...) : void
+  }
+  class PaymentController <<control>> {
+    + {static} DECLINED : String
+    + PaymentController(payments : PaymentRepository, clock : Clock)
+    + processPayment(actor : User, details : PaymentDetails, amountCents : long) : Payment
+    + processPayment(actor : User, method : PaymentMethod, amountCents : long) : Payment
+    + recordPayment(reservationId : long, payment : Payment) : Payment
+  }
+}
+
+package "com.flyres.control.strategy" {
+  interface PaymentMethod <<strategy>> {
+    + validate(clock : Clock) : ValidationErrors
+    + authorize(amountCents : long) : boolean
+    + last4() : String
+    + holderName() : String
+  }
+  class CardPayment {
+    + {static} CARDHOLDER_NAME : String
+    + {static} CARD_NUMBER : String
+    + {static} EXPIRY : String
+    + {static} CVV : String
+    + CardPayment(details : PaymentDetails)
+    ~ {static} passesLuhn(number : String) : boolean
+  }
+}
+
+package "com.flyres.domain.booking" {
+  class Payment <<entity>> {
+    - id : long
+    - reservationId : long
+    - cardholderName : String
+    - cardLast4 : String
+    - amountCents : long
+    - paidAt : LocalDateTime
+    - refundedAt : LocalDateTime
+    + {static} initiate(cardholderName : String, cardLast4 : String, amountCents : long) : Payment
+    + authorize() : void
+    + complete(at : LocalDateTime) : void
+    + fail() : void
+    + refund(at : LocalDateTime) : void
+  }
+  enum PaymentStatus <<entity>> {
+    INITIATED
+    AUTHORIZED
+    COMPLETED
+    FAILED
+    REFUNDED
+  }
+  class PaymentDetails <<record>> {
+    cardholderName : String
+    cardNumber : String
+    expiry : YearMonth
+    cvv : String
+    + digits() : String
   }
 }
 
@@ -135,6 +191,10 @@ package "com.flyres.repository" {
     + findAll() : List<Airline>
     + findByCode(code : String) : Optional<Airline>
   }
+  interface PaymentRepository {
+    + insert(reservationId : long, payment : Payment) : Payment
+    + findByReservationId(reservationId : long) : Optional<Payment>
+  }
   interface FlightRepository {
     + search(originCode : String, destinationCode : String, from : LocalDateTime, toExclusive : LocalDateTime, airlineCode : String) : List<FlightSummary>
     + findById(id : long) : Optional<Flight>
@@ -180,6 +240,7 @@ package "com.flyres.data.sqlite" {
   class SqliteAirportRepository
   class SqliteAirlineRepository
   class SqliteFlightRepository
+  class SqlitePaymentRepository
 }
 
 package "com.flyres.common.exception" {
@@ -284,6 +345,13 @@ package "com.flyres.ui.component" {
     + setEmptyMessage(message : String) : void
     + addActionColumn(buttonText : String, action : Consumer<FlightSummary>, disabledReason : String) : void
   }
+  class PaymentForm {
+    + toDetails() : PaymentDetails
+    + showErrors(fieldErrors : Map<String, String>) : void
+    + clearErrors() : void
+    + clearCvv() : void
+    + setCardholderName(name : String) : void
+  }
   class Formats <<utility>> {
     + {static} money(cents : long) : String
     + {static} date(date : LocalDate) : String
@@ -369,6 +437,22 @@ FlightRepository <|.. SqliteFlightRepository
 AirportRepository <|.. SqliteAirportRepository
 AirlineRepository <|.. SqliteAirlineRepository
 SqliteFlightRepository --> DatabaseManager
+
+FlyResBackend --> PaymentController
+FlyResBackend ..> SqlitePaymentRepository : creates
+PaymentController --> PaymentRepository
+PaymentController ..> PaymentMethod : uses (Strategy)
+PaymentController ..> CardPayment : creates
+PaymentController ..> Payment : creates
+PaymentController ..> Access
+PaymentController ..> BookingException : throws
+PaymentMethod <|.. CardPayment
+CardPayment --> PaymentDetails
+CardPayment ..> ValidationErrors
+Payment --> PaymentStatus
+PaymentRepository <|.. SqlitePaymentRepository
+PaymentRepository ..> Payment
+SqlitePaymentRepository --> DatabaseManager
 SqliteAirportRepository --> DatabaseManager
 SqliteAirlineRepository --> DatabaseManager
 FlightRepository ..> FlightSummary
@@ -415,4 +499,8 @@ FlightSearchViewController --> FlightTable
 FlightSearchViewController ..> FlightSearchController : searchFlights
 FlightTable ..> FlightSummary
 FlightTable ..> Formats
+PaymentForm ..> PaymentDetails : builds
+PaymentForm --> FormValidator
+ComponentDemoViewController --> PaymentForm
+ComponentDemoViewController ..> PaymentController : processPayment (demo)
 @enduml
