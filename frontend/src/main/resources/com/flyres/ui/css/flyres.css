@@ -192,6 +192,99 @@
     -fx-alignment: top-left;
 }
 
+/* ---------- Seat map ---------- */
+
+.seat-map {
+    -fx-spacing: 16px;
+}
+
+.seat-map-scroll,
+.seat-map-scroll > .viewport {
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 8px;
+}
+
+.seat-grid {
+    -fx-hgap: 8px;
+    -fx-vgap: 8px;
+    -fx-padding: 16px;
+}
+
+.seat {
+    -fx-min-width: 32px;
+    -fx-pref-width: 32px;
+    -fx-min-height: 32px;
+    -fx-pref-height: 32px;
+    -fx-padding: 0;
+    -fx-font-size: 11px;
+}
+
+.seat:selected {
+    -fx-background-color: -color-accent-emphasis;
+    -fx-text-fill: -color-fg-emphasis;
+}
+
+.seat.taken:disabled {
+    -fx-background-color: -color-neutral-emphasis;
+    -fx-text-fill: -color-fg-emphasis;
+    -fx-opacity: 0.55;
+}
+
+.seat.your-seat {
+    -fx-border-color: -color-success-emphasis;
+    -fx-border-width: 2px;
+    -fx-border-radius: 4px;
+}
+
+.seat-row-label,
+.seat-column-label {
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-size: 12px;
+    -fx-min-width: 24px;
+    -fx-alignment: center;
+}
+
+.seat-aisle {
+    -fx-min-width: 16px;
+}
+
+.seat-legend {
+    -fx-spacing: 16px;
+    -fx-alignment: center-left;
+}
+
+.seat-legend-item {
+    -fx-spacing: 8px;
+    -fx-alignment: center-left;
+}
+
+.seat-swatch {
+    -fx-min-width: 16px;
+    -fx-min-height: 16px;
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
+    -fx-border-color: -color-border-default;
+}
+
+.seat-swatch.available {
+    -fx-background-color: -color-bg-default;
+}
+
+.seat-swatch.selected {
+    -fx-background-color: -color-accent-emphasis;
+}
+
+.seat-swatch.taken {
+    -fx-background-color: -color-neutral-emphasis;
+    -fx-opacity: 0.55;
+}
+
+.seat-swatch.your-seat {
+    -fx-background-color: -color-bg-default;
+    -fx-border-color: -color-success-emphasis;
+    -fx-border-width: 2px;
+}
+
 /* ---------- Tables and empty states ---------- */
 
 .data-table {
