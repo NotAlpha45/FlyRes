@@ -17,7 +17,7 @@ import javafx.scene.layout.StackPane;
 
 /**
  * Reusable table of {@link FlightSummary} rows: flight, airline, route, departure, arrival, duration,
- * price and seats left. Used by flight search now, and later by schedules and agent booking.
+ * price and seats left (column "Seats"). Used by flight search now, and later by schedules and agent booking.
  * Rows keep the order they are given (sorted by departure by the control), so columns are not sortable.
  */
 public final class FlightTable extends TableView<FlightSummary> {
@@ -26,14 +26,14 @@ public final class FlightTable extends TableView<FlightSummary> {
         getStyleClass().addAll("data-table", "flight-table");
         setColumnResizePolicy(CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         getColumns().addAll(List.of(
-                column("Flight", s -> s.flight().getFlightNumber()),
-                column("Airline", s -> s.flight().airline().name()),
-                column("Route", s -> route(s.flight())),
-                column("Departs", s -> Formats.dateTime(s.flight().getDepartureTime())),
-                column("Arrives", s -> Formats.arrivalTime(s.flight().getDepartureTime(), s.flight().getArrivalTime())),
-                column("Duration", s -> Formats.duration(s.flight().duration())),
-                numericColumn("Price", s -> Formats.money(s.flight().getPriceCents())),
-                numericColumn("Seats left", s -> s.availableSeats() == 0 ? "Sold out" : String.valueOf(s.availableSeats()))));
+                column("Flight", 64, s -> s.flight().getFlightNumber()),
+                column("Airline", 104, s -> s.flight().airline().name()),
+                column("Route", 96, s -> route(s.flight())),
+                column("Departs", 144, s -> Formats.dateTime(s.flight().getDepartureTime())),
+                column("Arrives", 64, s -> Formats.arrivalTime(s.flight().getDepartureTime(), s.flight().getArrivalTime())),
+                column("Duration", 72, s -> Formats.duration(s.flight().duration())),
+                numericColumn("Price", 80, s -> Formats.money(s.flight().getPriceCents())),
+                numericColumn("Seats", 72, s -> s.availableSeats() == 0 ? "Sold out" : String.valueOf(s.availableSeats()))));
         setEmptyMessage("No flights to show.");
     }
 
@@ -51,6 +51,7 @@ public final class FlightTable extends TableView<FlightSummary> {
      */
     public void addActionColumn(String buttonText, Consumer<FlightSummary> action, String disabledReason) {
         TableColumn<FlightSummary, FlightSummary> column = new TableColumn<>("");
+        column.setMinWidth(80);
         column.setSortable(false);
         column.setReorderable(false);
         column.getStyleClass().add("action-column");
@@ -82,16 +83,19 @@ public final class FlightTable extends TableView<FlightSummary> {
         return flight.getRoute().origin().code() + " → " + flight.getRoute().destination().code();
     }
 
-    private static TableColumn<FlightSummary, String> column(String title, Function<FlightSummary, String> text) {
+    private static TableColumn<FlightSummary, String> column(String title, double minWidth,
+                                                             Function<FlightSummary, String> text) {
         TableColumn<FlightSummary, String> column = new TableColumn<>(title);
+        column.setMinWidth(minWidth);
         column.setSortable(false);
         column.setReorderable(false);
         column.setCellValueFactory(cell -> new ReadOnlyStringWrapper(text.apply(cell.getValue())));
         return column;
     }
 
-    private static TableColumn<FlightSummary, String> numericColumn(String title, Function<FlightSummary, String> text) {
-        TableColumn<FlightSummary, String> column = column(title, text);
+    private static TableColumn<FlightSummary, String> numericColumn(String title, double minWidth,
+                                                                    Function<FlightSummary, String> text) {
+        TableColumn<FlightSummary, String> column = column(title, minWidth, text);
         column.getStyleClass().add("numeric");
         return column;
     }
