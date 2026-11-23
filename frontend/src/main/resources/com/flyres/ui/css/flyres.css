@@ -187,10 +187,28 @@
     -fx-spacing: 16px;
 }
 
+/* Flight search: fields stay top-aligned when one shows an inline error. */
+.search-form {
+    -fx-alignment: top-left;
+}
+
 /* ---------- Tables and empty states ---------- */
 
 .data-table {
     -fx-pref-height: 240px;
+}
+
+/* Money and counts line up on the right, in the header and in every cell. */
+.data-table .numeric {
+    -fx-alignment: center-right;
+}
+
+.flight-table {
+    -fx-pref-height: 320px;
+}
+
+.data-table .action-column {
+    -fx-alignment: center;
 }
 
 .empty-state {

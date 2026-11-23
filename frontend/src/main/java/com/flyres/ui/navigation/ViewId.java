@@ -16,6 +16,7 @@ public enum ViewId {
     LOGIN("Log in", "auth/LoginView.fxml", false),
     REGISTER("Create account", "auth/RegisterView.fxml", false),
     HOME("Home", "home/HomeView.fxml", true, Role.CUSTOMER, Role.AGENT, Role.ADMIN),
+    FLIGHT_SEARCH("Search flights", "search/FlightSearchView.fxml", true, Role.CUSTOMER, Role.AGENT),
     COMPONENT_DEMO("Components", "demo/ComponentDemoView.fxml", true, Role.CUSTOMER, Role.AGENT, Role.ADMIN);
 
     private final String title;
