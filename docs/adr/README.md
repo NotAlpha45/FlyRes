@@ -24,3 +24,4 @@ This folder is FlyRes's design log. Each record (ADR) explains **what a feature 
 | [0003](0003-unexpected-error-handling.md) | Handling unexpected errors | FLY-28 | Accepted |
 | [0004](0004-flight-search.md) | Flight search | FLY-05 | Accepted |
 | [0006](0006-simulated-card-payment.md) | Simulated card payment | FLY-07 | Accepted |
+| [0005](0005-flight-details-and-seat-map.md) | Flight details and seat map | FLY-06 | Accepted |

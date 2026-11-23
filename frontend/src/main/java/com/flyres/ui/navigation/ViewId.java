@@ -17,6 +17,8 @@ public enum ViewId {
     REGISTER("Create account", "auth/RegisterView.fxml", false),
     HOME("Home", "home/HomeView.fxml", true, Role.CUSTOMER, Role.AGENT, Role.ADMIN),
     FLIGHT_SEARCH("Search flights", "search/FlightSearchView.fxml", true, Role.CUSTOMER, Role.AGENT),
+    /** Opened from a search result; not listed in the sidebar. */
+    FLIGHT_DETAILS("Flight details", "search/FlightDetailsView.fxml", true),
     COMPONENT_DEMO("Components", "demo/ComponentDemoView.fxml", true, Role.CUSTOMER, Role.AGENT, Role.ADMIN);
 
     private final String title;

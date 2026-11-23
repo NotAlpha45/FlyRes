@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import com.flyres.ui.component.PaymentForm?>
+<?import com.flyres.ui.component.SeatMapView?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.Label?>
@@ -75,5 +76,14 @@
                 <TableColumn fx:id="priceColumn" text="Price"/>
             </columns>
         </TableView>
+    </VBox>
+
+    <VBox styleClass="card">
+        <HBox styleClass="card-header">
+            <Label text="Seat map" styleClass="card-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="seatSelection" styleClass="text-muted"/>
+        </HBox>
+        <SeatMapView fx:id="seatMap"/>
     </VBox>
 </VBox>
