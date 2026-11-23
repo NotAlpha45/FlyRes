@@ -25,6 +25,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -113,7 +114,8 @@ class AuthenticationControllerTest {
         assertEquals("nadia@example.com", customer.getEmail());
         assertEquals("Nadia Khan", customer.getFullName());
         assertEquals("403-555-0177", customer.getPhone().orElseThrow());
-        assertEquals(LocalDateTime.of(2026, 11, 16, 9, 30, 45), customer.getCreatedAt());
+        // Derived from the clock rather than hard-coded, so the test doesn't depend on the JDK's tz rules.
+        assertEquals(LocalDateTime.now(CLOCK).truncatedTo(ChronoUnit.SECONDS), customer.getCreatedAt());
     }
 
     @Test
