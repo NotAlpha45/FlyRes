@@ -2,10 +2,13 @@ package com.flyres.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -78,6 +81,44 @@ class DatabaseManagerTest {
              Statement statement = database.getConnection().createStatement();
              ResultSet result = statement.executeQuery("PRAGMA foreign_keys")) {
             assertEquals(1, result.getInt(1));
+        }
+    }
+
+    @Test
+    void openFile_notASqliteFile_throwsAndKeepsFile() throws Exception {
+        Path file = tempDir.resolve("flyres.db");
+        Files.writeString(file, "this is not a sqlite database");
+
+        assertThrows(IllegalStateException.class, () -> DatabaseManager.openFile(file));
+        assertEquals("this is not a sqlite database", Files.readString(file));
+    }
+
+    @Test
+    void forTesting_newDatabase_busyTimeoutSet() throws SQLException {
+        try (DatabaseManager database = DatabaseManager.forTesting();
+             Statement statement = database.getConnection().createStatement();
+             ResultSet result = statement.executeQuery("PRAGMA busy_timeout")) {
+            assertEquals(DatabaseManager.BUSY_TIMEOUT_MILLIS, result.getInt(1));
+        }
+    }
+
+    @Test
+    void openFile_lockedByAnotherConnection_waitsBeforeFailing() throws SQLException {
+        Path file = tempDir.resolve("flyres.db");
+        try (DatabaseManager app = DatabaseManager.openFile(file);
+             Connection other = DriverManager.getConnection("jdbc:sqlite:" + file);
+             Statement lock = other.createStatement();
+             Statement write = app.getConnection().createStatement()) {
+            lock.execute("BEGIN EXCLUSIVE");
+
+            long start = System.nanoTime();
+            assertThrows(SQLException.class,
+                    () -> write.execute("UPDATE users SET first_name = 'Locked' WHERE id = 1"));
+            long waitedMillis = (System.nanoTime() - start) / 1_000_000;
+            assertTrue(waitedMillis >= DatabaseManager.BUSY_TIMEOUT_MILLIS / 2,
+                    "should wait for the lock before failing, waited " + waitedMillis + " ms");
+
+            lock.execute("ROLLBACK");
         }
     }
 

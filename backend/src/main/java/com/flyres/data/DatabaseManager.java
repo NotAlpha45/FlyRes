@@ -25,6 +25,9 @@ public final class DatabaseManager implements AutoCloseable {
     private static final String SCHEMA_SCRIPT = "/db/schema.sql";
     private static final String SEED_SCRIPT = "/db/seed.sql";
 
+    /** How long a statement waits for another process's lock before failing with SQLITE_BUSY. */
+    static final int BUSY_TIMEOUT_MILLIS = 3000;
+
     private static DatabaseManager instance;
 
     private final Connection connection;
@@ -34,6 +37,7 @@ public final class DatabaseManager implements AutoCloseable {
             this.connection = DriverManager.getConnection(jdbcUrl);
             try (Statement statement = connection.createStatement()) {
                 statement.execute("PRAGMA foreign_keys = ON");
+                statement.execute("PRAGMA busy_timeout = " + BUSY_TIMEOUT_MILLIS);
             }
         } catch (SQLException e) {
             throw new IllegalStateException("Could not open database " + jdbcUrl, e);
@@ -74,6 +78,9 @@ public final class DatabaseManager implements AutoCloseable {
             throw new UncheckedIOException("Could not create database directory for " + file, e);
         }
         DatabaseManager database = new DatabaseManager("jdbc:sqlite:" + file);
+        if (!isNew) {
+            database.checkReadable(file);
+        }
         if (isNew) {
             try {
                 new TransactionRunner(database).inTransaction(() -> {
@@ -87,6 +94,19 @@ public final class DatabaseManager implements AutoCloseable {
             }
         }
         return database;
+    }
+
+    /**
+     * Reads the schema once so a corrupt or non-SQLite file fails at startup, not on the first click.
+     * SQLite opens such files lazily and only reports "file is not a database" on the first query.
+     */
+    private void checkReadable(Path file) {
+        try (Statement statement = connection.createStatement()) {
+            statement.executeQuery("SELECT count(*) FROM sqlite_master").close();
+        } catch (SQLException e) {
+            close();
+            throw new IllegalStateException("Could not read database " + file, e);
+        }
     }
 
     private static void deleteQuietly(Path file, RuntimeException cause) {

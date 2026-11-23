@@ -21,3 +21,4 @@ This folder is FlyRes's design log. Each record (ADR) explains **what a feature 
 | --- | --- | --- | --- |
 | [0001](0001-record-architecture-decisions.md) | Record architecture decisions | — | Accepted |
 | [0002](0002-authentication.md) | Authentication: login, customer registration, logout | FLY-04 | Accepted |
+| [0003](0003-unexpected-error-handling.md) | Handling unexpected errors | FLY-28 | Accepted |

@@ -147,6 +147,7 @@ Work happens on issues `FLY-01` to `FLY-26`.
 - Keep spacing on an 8 px scale and use cards for grouped content.
 - Show validation errors inline under the field and success as a toast.
 - Every destructive action (cancel, archive) asks for confirmation and says what will happen.
+- **Errors:** a view controller catches the business exceptions it expects (`ValidationException`, `BookingException`, `AccessDeniedException`, `NotFoundException`) and shows them inline or as a specific toast. Don't catch anything else. `ErrorReporter` (installed in `FlyResApp.start`) catches every other exception, logs the stack trace and shows a generic error toast. If the database can't be opened at startup, it shows a dialog and exits. Never put exception text, SQL or file paths in the UI.
 
 The **Components** screen in the sidebar shows every shared piece: cards, buttons, a table with its empty state, a form with inline errors, toasts and the confirm dialog. Copy from it when you build a new screen.
 
@@ -157,6 +158,7 @@ The **Components** screen in the sidebar shows every shared piece: cards, button
 | Inline field errors | `new FormValidator().field("email", emailField, emailError)`, then `showError("email", message)` |
 | Group content | a `VBox` with style class `card` and a `card-title` label |
 | Empty list | `table.setPlaceholder(label)` with style class `empty-state` |
+| Unexpected error | nothing to do: `ErrorReporter` shows a generic toast and logs it |
 
 #### Adding a screen
 
@@ -199,5 +201,6 @@ The seed also adds 7 Canadian airports, 3 airlines, 5 aircraft and 16 flights ov
 | The first build is slow or seems to hang | It is downloading Gradle, JDK 21 and the dependencies. Let it finish. |
 | `Unsupported class file major version` in your IDE | Set the project SDK to JDK 21. Gradle's copy lives under `~/.gradle/jdks`. |
 | The app shows old data after a schema change | Reset the database (see [Resetting the database](#resetting-the-database)). |
+| "FlyRes could not start" dialog | The database file is locked by another program or is corrupt. Close other programs using `~/.flyres/flyres.db`; if it persists, reset the database. The console log has the details. |
 | `ArchitectureTest` fails | Your code broke a layering rule, and the failure message names the class. Fix the dependency rather than the test. |
 | IntelliJ or VS Code doesn't see the new modules | Reimport or reload the Gradle project. |

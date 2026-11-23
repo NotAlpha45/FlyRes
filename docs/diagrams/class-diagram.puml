@@ -185,6 +185,11 @@ package "com.flyres.ui.component" {
     + {static} success(source : Node, message : String) : void
     + {static} error(source : Node, message : String) : void
   }
+  class ErrorReporter <<utility>> {
+    + {static} UNEXPECTED_ERROR : String
+    + {static} install(stage : Stage) : void
+    + {static} showStartupFailure(error : Throwable) : void
+  }
   class ConfirmDialog <<utility>> {
     + {static} show(owner : Node, title : String, message : String, confirmLabel : String) : boolean
   }
@@ -258,6 +263,8 @@ Launcher ..> FlyResApp : launches
 FlyResApp --> FlyResBackend
 FlyResApp ..> SceneRouter
 FlyResApp ..> AppSession : creates
+FlyResApp ..> ErrorReporter : installs
+ErrorReporter ..> Toasts
 SceneRouter --> AppSession
 SceneRouter --> ViewContext
 SceneRouter ..> ViewId
