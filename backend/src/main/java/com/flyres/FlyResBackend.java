@@ -7,10 +7,12 @@ import com.flyres.data.DatabaseManager;
 import com.flyres.data.sqlite.SqliteAirlineRepository;
 import com.flyres.data.sqlite.SqliteAirportRepository;
 import com.flyres.data.sqlite.SqliteFlightRepository;
+import com.flyres.data.sqlite.SqliteSeatRepository;
 import com.flyres.data.sqlite.SqliteUserRepository;
 import com.flyres.repository.AirlineRepository;
 import com.flyres.repository.AirportRepository;
 import com.flyres.repository.FlightRepository;
+import com.flyres.repository.SeatRepository;
 import com.flyres.repository.UserRepository;
 import java.time.Clock;
 
@@ -37,11 +39,12 @@ public final class FlyResBackend implements AutoCloseable {
 
         UserRepository users = new SqliteUserRepository(database);
         FlightRepository flights = new SqliteFlightRepository(database);
+        SeatRepository seats = new SqliteSeatRepository(database);
         AirportRepository airports = new SqliteAirportRepository(database);
         AirlineRepository airlines = new SqliteAirlineRepository(database);
 
         this.authentication = new AuthenticationController(users, new PasswordHasher(), clock);
-        this.flightSearch = new FlightSearchController(flights, airports, airlines, clock);
+        this.flightSearch = new FlightSearchController(flights, seats, airports, airlines, clock);
     }
 
     /** Builds the backend on the shared production database. */
@@ -54,7 +57,7 @@ public final class FlyResBackend implements AutoCloseable {
         return authentication;
     }
 
-    /** Flight search for customers and agents. */
+    /** Flight search and flight details (seat map). */
     public FlightSearchController flightSearch() {
         return flightSearch;
     }

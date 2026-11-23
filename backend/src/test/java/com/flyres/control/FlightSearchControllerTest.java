@@ -9,12 +9,17 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.flyres.common.exception.AccessDeniedException;
+import com.flyres.common.exception.NotFoundException;
 import com.flyres.common.exception.ValidationException;
 import com.flyres.data.DatabaseManager;
 import com.flyres.data.sqlite.SqliteAirlineRepository;
 import com.flyres.data.sqlite.SqliteAirportRepository;
 import com.flyres.data.sqlite.SqliteFlightRepository;
+import com.flyres.data.sqlite.SqliteSeatRepository;
+import com.flyres.domain.flight.FlightDetails;
+import com.flyres.domain.flight.FlightStatus;
 import com.flyres.domain.flight.FlightSummary;
+import com.flyres.domain.flight.SeatAvailability;
 import com.flyres.domain.flight.SearchCriteria;
 import com.flyres.domain.user.Role;
 import com.flyres.domain.user.User;
@@ -47,7 +52,7 @@ class FlightSearchControllerTest {
     void setUp() throws SQLException {
         database = DatabaseManager.forTesting();
         FlightFixture.insert(database.getConnection());
-        search = new FlightSearchController(new SqliteFlightRepository(database),
+        search = new FlightSearchController(new SqliteFlightRepository(database), new SqliteSeatRepository(database),
                 new SqliteAirportRepository(database), new SqliteAirlineRepository(database), FlightFixture.NOW);
     }
 
@@ -198,6 +203,55 @@ class FlightSearchControllerTest {
     void listAirportsAndAirlines_asCustomer_returnsAll() {
         assertEquals(3, search.listAirports(CUSTOMER).size());
         assertEquals(2, search.listAirlines(AGENT).size());
+    }
+
+    // ---------- getFlightDetails ----------
+
+    @Test
+    void getFlightDetails_scheduledFlight_returnsSeatsAndAvailability() {
+        FlightDetails details = search.getFlightDetails(CUSTOMER, FlightFixture.AC104);
+
+        assertEquals("AC104", details.flight().getFlightNumber());
+        assertEquals(2, details.seatRows());
+        assertEquals(2, details.seatsPerRow());
+        assertEquals(List.of("1A", "1B", "2A", "2B"), details.seats().stream().map(s -> s.seat().label()).toList());
+        assertEquals(List.of(true, false, false, false), details.seats().stream().map(SeatAvailability::taken).toList());
+        assertEquals(3, details.availableCount());
+    }
+
+    @Test
+    void getFlightDetails_asAgent_returnsDetails() {
+        assertEquals(6, search.getFlightDetails(AGENT, FlightFixture.WS200).seats().size());
+    }
+
+    @Test
+    void getFlightDetails_unknownId_throwsNotFoundException() {
+        assertThrows(NotFoundException.class, () -> search.getFlightDetails(CUSTOMER, 999));
+    }
+
+    @Test
+    void getFlightDetails_archivedFlightAsCustomer_throwsNotFoundException() {
+        NotFoundException e = assertThrows(NotFoundException.class,
+                () -> search.getFlightDetails(CUSTOMER, FlightFixture.AC106_ARCHIVED));
+
+        assertEquals(FlightSearchController.FLIGHT_UNAVAILABLE, e.getMessage());
+    }
+
+    @Test
+    void getFlightDetails_departedFlightAsAgent_throwsNotFoundException() {
+        // Flight 2 (AC102) departs exactly at the fixture's "now".
+        assertThrows(NotFoundException.class, () -> search.getFlightDetails(AGENT, 2));
+    }
+
+    @Test
+    void getFlightDetails_archivedFlightAsAdmin_returnsDetails() {
+        assertEquals(FlightStatus.ARCHIVED,
+                search.getFlightDetails(ADMIN, FlightFixture.AC106_ARCHIVED).flight().getStatus());
+    }
+
+    @Test
+    void getFlightDetails_noUser_throwsAccessDeniedException() {
+        assertThrows(AccessDeniedException.class, () -> search.getFlightDetails(null, FlightFixture.AC104));
     }
 
     @Test
