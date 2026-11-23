@@ -3,10 +3,12 @@ package com.flyres;
 import com.flyres.common.security.PasswordHasher;
 import com.flyres.control.AuthenticationController;
 import com.flyres.control.FlightSearchController;
+import com.flyres.control.PaymentController;
 import com.flyres.data.DatabaseManager;
 import com.flyres.data.sqlite.SqliteAirlineRepository;
 import com.flyres.data.sqlite.SqliteAirportRepository;
 import com.flyres.data.sqlite.SqliteFlightRepository;
+import com.flyres.data.sqlite.SqlitePaymentRepository;
 import com.flyres.data.sqlite.SqliteUserRepository;
 import com.flyres.repository.AirlineRepository;
 import com.flyres.repository.AirportRepository;
@@ -25,6 +27,7 @@ public final class FlyResBackend implements AutoCloseable {
     private final DatabaseManager database;
     private final AuthenticationController authentication;
     private final FlightSearchController flightSearch;
+    private final PaymentController payments;
 
     /** Builds the backend on the given database with the system clock. */
     public FlyResBackend(DatabaseManager database) {
@@ -42,6 +45,7 @@ public final class FlyResBackend implements AutoCloseable {
 
         this.authentication = new AuthenticationController(users, new PasswordHasher(), clock);
         this.flightSearch = new FlightSearchController(flights, airports, airlines, clock);
+        this.payments = new PaymentController(new SqlitePaymentRepository(database), clock);
     }
 
     /** Builds the backend on the shared production database. */
@@ -57,6 +61,11 @@ public final class FlyResBackend implements AutoCloseable {
     /** Flight search for customers and agents. */
     public FlightSearchController flightSearch() {
         return flightSearch;
+    }
+
+    /** Simulated card payments. */
+    public PaymentController payments() {
+        return payments;
     }
 
     /** Releases the database connection. */
