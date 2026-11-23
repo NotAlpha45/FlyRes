@@ -193,6 +193,19 @@
     -fx-pref-height: 240px;
 }
 
+/* Money and counts line up on the right, in the header and in every cell. */
+.data-table .numeric {
+    -fx-alignment: center-right;
+}
+
+.flight-table {
+    -fx-pref-height: 320px;
+}
+
+.data-table .action-column {
+    -fx-alignment: center;
+}
+
 .empty-state {
     -fx-text-fill: -color-fg-muted;
     -fx-padding: 24px;
