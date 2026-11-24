@@ -5,25 +5,23 @@ import com.flyres.domain.flight.Flight;
 import com.flyres.domain.flight.FlightDetails;
 import com.flyres.domain.flight.SearchCriteria;
 import com.flyres.domain.flight.Seat;
+import com.flyres.domain.user.Role;
 import com.flyres.ui.component.Formats;
 import com.flyres.ui.component.SeatMapView;
 import com.flyres.ui.component.Toasts;
 import com.flyres.ui.navigation.ViewContext;
 import com.flyres.ui.navigation.ViewId;
+import com.flyres.ui.view.booking.PaymentViewController;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.Tooltip;
 import javafx.scene.layout.StackPane;
 
 /**
  * &lt;&lt;boundary&gt;&gt; One flight's details and seat map. Loads them with
- * {@code FlightSearchController.getFlightDetails} and lets the user pick a seat. Continuing to payment
- * arrives with booking (FLY-08).
+ * {@code FlightSearchController.getFlightDetails} and lets the user pick a seat before continuing to payment.
  */
 public class FlightDetailsViewController {
-
-    private static final String CONTINUE_COMING_SOON = "Payment and booking are coming soon.";
 
     @FXML
     private Label titleLabel;
@@ -65,8 +63,6 @@ public class FlightDetailsViewController {
     private void initialize() {
         soldOutLabel.managedProperty().bind(soldOutLabel.visibleProperty());
         soldOutLabel.setVisible(false);
-        // A disabled button receives no mouse events, so the tooltip goes on its container.
-        Tooltip.install(continueHolder, new Tooltip(CONTINUE_COMING_SOON));
         seatMap.selectedSeatProperty().addListener((observable, previous, seat) -> showSelection(seat));
         showSelection(null);
     }
@@ -92,6 +88,16 @@ public class FlightDetailsViewController {
         if (returnTo != null) {
             search.restore(returnTo);
         }
+    }
+
+    @FXML
+    private void onContinue() {
+        Seat seat = seatMap.getSelectedSeat();
+        if (seat == null || details == null) {
+            return;
+        }
+        PaymentViewController payment = context.router().goTo(ViewId.BOOKING_PAYMENT);
+        payment.showBooking(details.flight(), seat, returnTo);
     }
 
     private void load() {
@@ -130,7 +136,6 @@ public class FlightDetailsViewController {
         } else {
             selectionLabel.setText("Seat " + seat.label() + " · " + Formats.money(details.flight().getPriceCents()));
         }
-        // Continue stays disabled until booking (FLY-08) wires it, whatever the selection.
-        continueButton.setDisable(true);
+        continueButton.setDisable(seat == null || !context.session().requireUser().hasRole(Role.CUSTOMER));
     }
 }

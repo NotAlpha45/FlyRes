@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.flyres.ui.component.PaymentForm?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.flyres.ui.view.booking.PaymentViewController"
+      styleClass="page">
+    <HBox styleClass="button-row">
+        <Button text="← Back to seat map" onAction="#onBack" styleClass="flat"/>
+    </HBox>
+
+    <VBox styleClass="card">
+        <Label text="Review your flight" styleClass="card-title"/>
+        <Label fx:id="flightLabel" styleClass="detail-value"/>
+        <Label fx:id="routeLabel" styleClass="flight-route"/>
+        <HBox styleClass="detail-row">
+            <VBox styleClass="detail-item">
+                <Label text="Departure" styleClass="text-muted"/>
+                <Label fx:id="departureLabel" styleClass="detail-value"/>
+            </VBox>
+            <VBox styleClass="detail-item">
+                <Label text="Seat" styleClass="text-muted"/>
+                <Label fx:id="seatLabel" styleClass="detail-value"/>
+            </VBox>
+            <VBox styleClass="detail-item">
+                <Label text="Total" styleClass="text-muted"/>
+                <Label fx:id="totalLabel" styleClass="detail-value"/>
+            </VBox>
+        </HBox>
+    </VBox>
+
+    <VBox styleClass="card">
+        <Label text="Payment" styleClass="card-title"/>
+        <PaymentForm fx:id="paymentForm"/>
+        <HBox styleClass="button-row">
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="payButton" text="Pay" styleClass="accent" onAction="#onPay"/>
+        </HBox>
+    </VBox>
+</VBox>

@@ -225,6 +225,12 @@
     -fx-font-weight: bold;
 }
 
+.booking-code {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-success-emphasis;
+}
+
 /* ---------- Seat map ---------- */
 
 .seat-map {
