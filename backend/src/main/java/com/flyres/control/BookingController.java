@@ -2,7 +2,6 @@ package com.flyres.control;
 
 import com.flyres.common.exception.BookingException;
 import com.flyres.common.exception.NotFoundException;
-import com.flyres.common.exception.ValidationException;
 import com.flyres.domain.booking.BookingRequest;
 import com.flyres.domain.booking.Payment;
 import com.flyres.domain.booking.Reservation;
@@ -25,6 +24,9 @@ import java.util.Random;
 
 /** Coordinates fare validation, simulated payment and reservation creation in one transaction. */
 public final class BookingController {
+
+    /** Shown when the chosen seat does not belong to the flight being booked. */
+    public static final String SEAT_NOT_ON_FLIGHT = "That seat is not on this flight. Pick a seat from the map.";
 
     private final ReservationRepository reservations;
     private final SeatRepository seats;
@@ -65,9 +67,11 @@ public final class BookingController {
             throw new BookingException(FlightSearchController.FLIGHT_UNAVAILABLE);
         }
 
+        // A BookingException, not a ValidationException: the seat is not a field on the payment form,
+        // so the view shows the message and returns to the seat map.
         Seat seat = seats.findById(request.seatId())
                 .filter(candidate -> candidate.flightId() == flight.getId())
-                .orElseThrow(() -> new ValidationException("seat", "Choose a seat on this flight."));
+                .orElseThrow(() -> new BookingException(SEAT_NOT_ON_FLIGHT));
         boolean taken = seats.findByFlight(flight.getId()).stream()
                 .filter(availability -> availability.seat().id() == seat.id())
                 .anyMatch(SeatAvailability::taken);

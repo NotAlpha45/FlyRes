@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.flyres.common.exception.AccessDeniedException;
 import com.flyres.common.exception.BookingException;
-import com.flyres.common.exception.ValidationException;
 import com.flyres.data.DatabaseManager;
 import com.flyres.data.TransactionRunner;
 import com.flyres.data.sqlite.SqliteFlightRepository;
@@ -159,13 +158,13 @@ class BookingControllerTest {
     }
 
     @Test
-    void book_seatFromOtherFlight_throwsValidationException() {
+    void book_seatFromOtherFlight_throwsBookingException() {
         Seat seat = freeSeat(FlightFixture.WS200);
 
-        ValidationException failure = assertThrows(ValidationException.class,
+        BookingException failure = assertThrows(BookingException.class,
                 () -> book(CUSTOMER, FlightFixture.AC104, seat, 18900, approvedCard()));
 
-        assertEquals("seat", failure.getField());
+        assertEquals(BookingController.SEAT_NOT_ON_FLIGHT, failure.getMessage());
     }
 
     @Test
