@@ -47,11 +47,15 @@ package "com.flyres.control" {
     + processPayment(actor : User, details : PaymentDetails, amountCents : long) : Payment
     + processPayment(actor : User, method : PaymentMethod, amountCents : long) : Payment
     + recordPayment(reservationId : long, payment : Payment) : Payment
+    + paymentFor(reservationId : long) : Optional<Payment>
   }
   class BookingController <<control>> {
     + BookingController(reservations : ReservationRepository, seats : SeatRepository, flights : FlightRepository, payments : PaymentController, transactions : TransactionRunner, clock : Clock, random : Random)
     + {static} SEAT_NOT_ON_FLIGHT : String
+    + {static} TRIP_NOT_FOUND : String
     + book(actor : User, request : BookingRequest) : BookingConfirmation
+    + listMyReservations(actor : User) : MyTrips
+    + getReservation(actor : User, reservationId : long) : ReservationDetails
   }
   class ConfirmationCodeGenerator <<utility>> {
     ~ ConfirmationCodeGenerator(random : Random)
@@ -118,6 +122,18 @@ package "com.flyres.domain.booking" {
     + confirm(code : String, at : LocalDateTime) : void
     + cancel(at : LocalDateTime) : void
     + statusAt(clock : Clock) : ReservationStatus
+    + summaryAt(clock : Clock) : ReservationSummary
+  }
+  class ReservationSummary <<record>> {
+    status : ReservationStatus
+    + isFlightRemoved() : boolean
+  }
+  class ReservationDetails <<record>> {
+    + paymentRecord() : Optional<Payment>
+  }
+  class MyTrips <<record>> {
+    + {static} of(summaries : List<ReservationSummary>) : MyTrips
+    + isEmpty() : boolean
   }
   enum ReservationStatus <<entity>> {
     PENDING
@@ -256,6 +272,7 @@ package "com.flyres.repository" {
     + findById(id : long) : Optional<Reservation>
     + existsByCode(confirmationCode : String) : boolean
     + hasConfirmedOnFlight(customerId : long, flightId : long) : boolean
+    + findByCustomer(customerId : long) : List<Reservation>
   }
   interface SeatRepository {
     + findByFlight(flightId : long) : List<SeatAvailability>
@@ -386,6 +403,8 @@ package "com.flyres.ui.navigation" {
     HOME
     FLIGHT_SEARCH
     FLIGHT_DETAILS
+    MY_TRIPS
+    TRIP_DETAILS
     BOOKING_PAYMENT
     BOOKING_CONFIRMATION
     COMPONENT_DEMO
@@ -417,6 +436,12 @@ package "com.flyres.ui.component" {
   class FlightTable {
     + setEmptyMessage(message : String) : void
     + addActionColumn(buttonText : String, action : Consumer<FlightSummary>, disabledReason : String) : void
+  }
+  class TripTable {
+    + setEmptyMessage(message : String) : void
+    + addActionColumn(buttonText : String, action : Consumer<ReservationSummary>) : void
+    + {static} statusText(trip : ReservationSummary) : String
+    + {static} statusBadge(trip : ReservationSummary) : Label
   }
   class PaymentForm {
     + toDetails() : PaymentDetails
@@ -457,6 +482,13 @@ package "com.flyres.ui.view.booking" {
   class PaymentViewController <<boundary>> {
     + PaymentViewController(context : ViewContext)
     + showBooking(flight : Flight, seat : Seat, searchToRestore : SearchCriteria) : void
+  }
+  class MyTripsViewController <<boundary>> {
+    + MyTripsViewController(context : ViewContext)
+  }
+  class TripDetailsViewController <<boundary>> {
+    + TripDetailsViewController(context : ViewContext)
+    + showTrip(reservationId : long) : void
   }
   class BookingConfirmationViewController <<boundary>> {
     + BookingConfirmationViewController(context : ViewContext)
@@ -562,6 +594,12 @@ BookingController ..> BookingRequest
 BookingController ..> BookingConfirmation : creates
 BookingConfirmation --> "1" Reservation
 BookingConfirmation --> "1" Payment
+BookingController ..> MyTrips : creates
+BookingController ..> ReservationDetails : creates
+ReservationSummary --> "1" Reservation
+ReservationDetails --> "1" ReservationSummary
+ReservationDetails --> "0..1" Payment
+MyTrips "1" o-- "*" ReservationSummary : upcoming / past / cancelled
 BookingController ..> Reservation : creates
 BookingController ..> BookingException : throws
 ConfirmationCodeGenerator ..> ReservationRepository
@@ -645,4 +683,14 @@ BookingConfirmationViewController --> ViewContext
 BookingConfirmationViewController ..> Reservation : displays
 SeatMapView ..> SeatAvailability
 ComponentDemoViewController --> SeatMapView
+MyTripsViewController --> ViewContext
+MyTripsViewController --> TripTable
+MyTripsViewController ..> BookingController : listMyReservations
+MyTripsViewController ..> TripDetailsViewController : opens
+TripDetailsViewController --> ViewContext
+TripDetailsViewController ..> BookingController : getReservation
+TripDetailsViewController ..> TripTable : statusBadge
+BookingConfirmationViewController ..> MyTripsViewController : View my trips
+TripTable ..> ReservationSummary
+TripTable ..> Formats
 @enduml
