@@ -233,6 +233,11 @@ class BookingControllerTest {
             }
 
             @Override
+            public java.util.List<Reservation> findByCustomer(long customerId) {
+                return java.util.List.of();
+            }
+
+            @Override
             public boolean existsByCode(String confirmationCode) {
                 return checks.getAndIncrement() == 0;
             }
@@ -268,6 +273,11 @@ class BookingControllerTest {
             @Override
             public java.util.Optional<Reservation> findById(long id) {
                 return java.util.Optional.empty();
+            }
+
+            @Override
+            public java.util.List<Reservation> findByCustomer(long customerId) {
+                return java.util.List.of();
             }
 
             @Override
