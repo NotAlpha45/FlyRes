@@ -39,10 +39,32 @@ Booking connects flight details (FLY-06) and simulated card payment (FLY-07). Th
 - **Decision:** use six characters from `23456789ABCDEFGHJKLMNPQRSTUVWXYZ`, checking repository collisions and retrying up to ten times. Production wiring uses `SecureRandom`; tests inject a seeded `Random`.
 - **Why:** codes are compact and avoid easily confused characters while remaining deterministic in tests.
 
+### D5. Problems with the chosen seat are booking errors, not field errors
+
+- **Options:** `ValidationException("seat", …)`; `BookingException`.
+- **Decision:** a seat that isn't on the flight throws `BookingException(SEAT_NOT_ON_FLIGHT)`, like a taken seat.
+- **Why:** the payment screen's form has only card fields. A `seat` field error has nowhere to show, and `FormValidator` rejects unknown fields. As a `BookingException`, the message is shown as a toast and the user goes back to the seat map.
+
+### D6. `book` returns the reservation and the recorded payment
+
+- **Decision:** `book` returns `BookingConfirmation(reservation, payment)`, with the payment as stored.
+- **Why:** the confirmation screen shows the stored `card_last4` instead of re-deriving it from what was typed.
+
+### D7. Flights always have a positive price
+
+- **Decision:** `flights.price_cents` is `CHECK (price_cents > 0)`, and the `Flight` constructor rejects a price ≤ 0.
+- **Why:** every booking takes a payment, and `PaymentController` rejects non-positive amounts. Allowing $0 flights would create flights that can never be booked. Changing the schema means deleting `~/.flyres`.
+
+### D8. Seat collisions are detected by the SQLite result code
+
+- **Decision:** a `SQLITE_CONSTRAINT_UNIQUE` failure on insert is a taken seat unless the message names `confirmation_code`, the only other unique column.
+- **Why:** this doesn't depend on the exact wording sqlite-jdbc uses for the seat index.
+
 ## Consequences
 
 - Agents, cancellations, seat changes, and trips history remain out of scope (FLY-09 through FLY-11 and FLY-15).
 - The payment form clears the CVV after a decline while retaining the other entered values.
+- Until FLY-09, "View my trips" on the confirmation is disabled with a tooltip. Agents see Continue disabled with a tooltip until FLY-15.
 - `COMPLETED` remains a derived reservation state; only `CONFIRMED` and `CANCELLED` are persisted.
 
 ## Verification
@@ -50,5 +72,6 @@ Booking connects flight details (FLY-06) and simulated card payment (FLY-07). Th
 - `ReservationTest`: confirm/cancel transitions, illegal transitions, and completion at departure.
 - Confirmation-code alphabet and collision retry are covered in `BookingControllerTest`.
 - `BookingControllerTest`: success and payment linkage; seat taken, decline rollback, departed/archived flight, mismatched seat, fare change, duplicate customer booking, and role/customer ownership checks.
-- `SqliteReservationRepositoryTest`: round trip, code/flight queries, and seat-index collision translation.
+- `SqliteReservationRepositoryTest`: round trip, code/flight queries, seat-index collision translation, and a duplicate code not reported as a taken seat.
+- `SchemaTest` and `FlightTest`: a zero price is rejected by the database and by `Flight`.
 - Manually verify the customer path from flight details through payment to confirmation, then refresh search to confirm availability changes.

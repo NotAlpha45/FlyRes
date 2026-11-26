@@ -50,7 +50,8 @@ package "com.flyres.control" {
   }
   class BookingController <<control>> {
     + BookingController(reservations : ReservationRepository, seats : SeatRepository, flights : FlightRepository, payments : PaymentController, transactions : TransactionRunner, clock : Clock, random : Random)
-    + book(actor : User, request : BookingRequest) : Reservation
+    + {static} SEAT_NOT_ON_FLIGHT : String
+    + book(actor : User, request : BookingRequest) : BookingConfirmation
   }
   class ConfirmationCodeGenerator <<utility>> {
     ~ ConfirmationCodeGenerator(random : Random)
@@ -130,6 +131,10 @@ package "com.flyres.domain.booking" {
     seatId : long
     expectedPriceCents : long
     payment : PaymentDetails
+  }
+  class BookingConfirmation <<record>> {
+    reservation : Reservation
+    payment : Payment
   }
 }
 
@@ -554,6 +559,9 @@ BookingController --> PaymentController
 BookingController --> TransactionRunner
 BookingController --> ConfirmationCodeGenerator
 BookingController ..> BookingRequest
+BookingController ..> BookingConfirmation : creates
+BookingConfirmation --> "1" Reservation
+BookingConfirmation --> "1" Payment
 BookingController ..> Reservation : creates
 BookingController ..> BookingException : throws
 ConfirmationCodeGenerator ..> ReservationRepository
