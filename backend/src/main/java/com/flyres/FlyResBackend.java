@@ -47,9 +47,8 @@ public final class FlyResBackend implements AutoCloseable {
         AirlineRepository airlines = new SqliteAirlineRepository(database);
 
         this.authentication = new AuthenticationController(users, new PasswordHasher(), clock);
-        this.flightSearch = new FlightSearchController(flights, airports, airlines, clock);
-        this.payments = new PaymentController(new SqlitePaymentRepository(database), clock);
         this.flightSearch = new FlightSearchController(flights, seats, airports, airlines, clock);
+        this.payments = new PaymentController(new SqlitePaymentRepository(database), clock);
     }
 
     /** Builds the backend on the shared production database. */
