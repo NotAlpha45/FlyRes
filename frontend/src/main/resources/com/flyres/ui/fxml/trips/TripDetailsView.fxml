@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- One reservation: flight, seat, status and its payment record. -->
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.flyres.ui.view.trips.TripDetailsViewController"
+      styleClass="page">
+
+    <HBox styleClass="button-row">
+        <Button text="← Back to My trips" onAction="#onBack" styleClass="flat"/>
+    </HBox>
+
+    <VBox styleClass="card">
+        <HBox styleClass="card-header">
+            <VBox styleClass="detail-item">
+                <Label text="Confirmation code" styleClass="text-muted"/>
+                <Label fx:id="codeLabel" styleClass="booking-code"/>
+            </VBox>
+            <Region HBox.hgrow="ALWAYS"/>
+            <StackPane fx:id="statusHolder"/>
+        </HBox>
+        <Label fx:id="noticeLabel" styleClass="trip-notice" wrapText="true"/>
+        <Label fx:id="flightLabel" styleClass="card-title"/>
+        <Label fx:id="routeLabel" styleClass="flight-route"/>
+        <HBox styleClass="detail-row">
+            <VBox styleClass="detail-item">
+                <Label text="Departs" styleClass="text-muted"/>
+                <Label fx:id="departsLabel" styleClass="detail-value"/>
+            </VBox>
+            <VBox styleClass="detail-item">
+                <Label text="Arrives" styleClass="text-muted"/>
+                <Label fx:id="arrivesLabel" styleClass="detail-value"/>
+            </VBox>
+            <VBox styleClass="detail-item">
+                <Label text="Seat" styleClass="text-muted"/>
+                <Label fx:id="seatLabel" styleClass="detail-value"/>
+            </VBox>
+            <VBox styleClass="detail-item">
+                <Label text="Aircraft" styleClass="text-muted"/>
+                <Label fx:id="aircraftLabel" styleClass="detail-value"/>
+            </VBox>
+            <VBox styleClass="detail-item">
+                <Label text="Booked" styleClass="text-muted"/>
+                <Label fx:id="bookedLabel" styleClass="detail-value"/>
+            </VBox>
+        </HBox>
+        <!-- FLY-10 (cancel) and FLY-11 (change seat) add their buttons here. -->
+        <HBox fx:id="actionRow" styleClass="button-row"/>
+    </VBox>
+
+    <VBox styleClass="card">
+        <Label text="Payment" styleClass="card-title"/>
+        <HBox styleClass="detail-row">
+            <VBox styleClass="detail-item">
+                <Label text="Amount paid" styleClass="text-muted"/>
+                <Label fx:id="amountLabel" styleClass="detail-value"/>
+            </VBox>
+            <VBox styleClass="detail-item">
+                <Label text="Card" styleClass="text-muted"/>
+                <Label fx:id="cardLabel" styleClass="detail-value"/>
+            </VBox>
+            <VBox styleClass="detail-item">
+                <Label text="Cardholder" styleClass="text-muted"/>
+                <Label fx:id="cardholderLabel" styleClass="detail-value"/>
+            </VBox>
+            <VBox styleClass="detail-item">
+                <Label text="Payment status" styleClass="text-muted"/>
+                <Label fx:id="paymentStatusLabel" styleClass="detail-value"/>
+            </VBox>
+            <VBox styleClass="detail-item">
+                <Label text="Paid" styleClass="text-muted"/>
+                <Label fx:id="paidLabel" styleClass="detail-value"/>
+            </VBox>
+            <VBox fx:id="refundedItem" styleClass="detail-item">
+                <Label text="Refunded" styleClass="text-muted"/>
+                <Label fx:id="refundedLabel" styleClass="detail-value"/>
+            </VBox>
+        </HBox>
+        <Label fx:id="noPaymentLabel" text="No payment is recorded for this trip." styleClass="text-muted"/>
+    </VBox>
+</VBox>

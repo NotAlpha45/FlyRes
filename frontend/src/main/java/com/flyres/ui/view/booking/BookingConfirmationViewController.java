@@ -8,8 +8,6 @@ import java.time.format.DateTimeFormatter;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.Tooltip;
-import javafx.scene.layout.StackPane;
 
 /** Displays the booking code and the saved trip/payment summary. */
 public final class BookingConfirmationViewController {
@@ -32,19 +30,11 @@ public final class BookingConfirmationViewController {
     private Label bookedAtLabel;
     @FXML
     private Button tripsButton;
-    @FXML
-    private StackPane tripsHolder;
 
     private final ViewContext context;
 
     public BookingConfirmationViewController(ViewContext context) {
         this.context = context;
-    }
-
-    @FXML
-    private void initialize() {
-        // A disabled button receives no mouse events, so the tooltip goes on its container.
-        Tooltip.install(tripsHolder, new Tooltip("My trips is coming soon. Your booking is saved."));
     }
 
     /** Renders the persisted booking and the payment's non-sensitive last four digits. */
@@ -65,8 +55,8 @@ public final class BookingConfirmationViewController {
         context.router().goTo(ViewId.FLIGHT_SEARCH);
     }
 
-    /** Placeholder until My trips (FLY-09) exists; the button stays disabled until then. */
     @FXML
     private void onViewTrips() {
+        context.router().goTo(ViewId.MY_TRIPS);
     }
 }

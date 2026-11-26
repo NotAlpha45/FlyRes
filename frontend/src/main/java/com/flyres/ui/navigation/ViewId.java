@@ -17,6 +17,9 @@ public enum ViewId {
     REGISTER("Create account", "auth/RegisterView.fxml", false),
     HOME("Home", "home/HomeView.fxml", true, Role.CUSTOMER, Role.AGENT, Role.ADMIN),
     FLIGHT_SEARCH("Search flights", "search/FlightSearchView.fxml", true, Role.CUSTOMER, Role.AGENT),
+    MY_TRIPS("My trips", "trips/MyTripsView.fxml", true, Role.CUSTOMER),
+    /** Opened from My trips; not listed in the sidebar. */
+    TRIP_DETAILS("Trip details", "trips/TripDetailsView.fxml", true),
     /** Opened from a search result; not listed in the sidebar. */
     FLIGHT_DETAILS("Flight details", "search/FlightDetailsView.fxml", true),
     /** Opened after choosing a seat; not listed in the sidebar. */

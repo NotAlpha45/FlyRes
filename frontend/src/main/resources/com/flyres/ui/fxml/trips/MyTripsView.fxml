@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.flyres.ui.component.TripTable?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- The customer's reservations: upcoming, past and cancelled trips. -->
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.flyres.ui.view.trips.MyTripsViewController"
+      styleClass="page">
+
+    <HBox styleClass="card-header">
+        <Label fx:id="summaryLabel" styleClass="text-muted"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="Search flights" onAction="#onSearchFlights"/>
+    </HBox>
+
+    <VBox styleClass="card">
+        <TabPane fx:id="tabs" tabClosingPolicy="UNAVAILABLE">
+            <tabs>
+                <Tab fx:id="upcomingTab" text="Upcoming">
+                    <content>
+                        <VBox styleClass="tab-body">
+                            <TripTable fx:id="upcomingTable"/>
+                        </VBox>
+                    </content>
+                </Tab>
+                <Tab fx:id="pastTab" text="Past">
+                    <content>
+                        <VBox styleClass="tab-body">
+                            <TripTable fx:id="pastTable"/>
+                        </VBox>
+                    </content>
+                </Tab>
+                <Tab fx:id="cancelledTab" text="Cancelled">
+                    <content>
+                        <VBox styleClass="tab-body">
+                            <TripTable fx:id="cancelledTable"/>
+                        </VBox>
+                    </content>
+                </Tab>
+            </tabs>
+        </TabPane>
+    </VBox>
+</VBox>
