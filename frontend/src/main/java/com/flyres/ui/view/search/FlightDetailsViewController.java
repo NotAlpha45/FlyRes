@@ -15,6 +15,7 @@ import com.flyres.ui.view.booking.PaymentViewController;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.StackPane;
 
 /**
@@ -64,6 +65,12 @@ public class FlightDetailsViewController {
         soldOutLabel.managedProperty().bind(soldOutLabel.visibleProperty());
         soldOutLabel.setVisible(false);
         seatMap.selectedSeatProperty().addListener((observable, previous, seat) -> showSelection(seat));
+        if (!context.session().requireUser().hasRole(Role.CUSTOMER)) {
+            // Continue is disabled for staff; a disabled button gets no mouse events, so the tooltip
+            // goes on its container. Agents will book from a customer's profile (FLY-15).
+            Tooltip.install(continueHolder, new Tooltip("Only customers can book here. Agents book for a "
+                    + "customer from the customer's profile, which is coming soon."));
+        }
         showSelection(null);
     }
 
