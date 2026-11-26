@@ -59,7 +59,7 @@ CREATE TABLE flights (
     aircraft_id    INTEGER NOT NULL REFERENCES aircraft (id),
     departure_time TEXT    NOT NULL,
     arrival_time   TEXT    NOT NULL,
-    price_cents    INTEGER NOT NULL CHECK (price_cents >= 0),
+    price_cents    INTEGER NOT NULL CHECK (price_cents > 0),
     status         TEXT    NOT NULL CHECK (status IN ('SCHEDULED', 'ARCHIVED')),
     UNIQUE (flight_number, departure_time),
     CHECK (arrival_time > departure_time)

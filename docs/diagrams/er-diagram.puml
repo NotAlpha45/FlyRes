@@ -58,7 +58,7 @@ entity flights {
   * aircraft_id : INTEGER <<FK>>
   * departure_time : TEXT
   * arrival_time : TEXT
-  * price_cents : INTEGER
+  * price_cents : INTEGER <<CHECK > 0>>
   * status : TEXT {SCHEDULED, ARCHIVED}
 }
 
