@@ -26,3 +26,4 @@ This folder is FlyRes's design log. Each record (ADR) explains **what a feature 
 | [0005](0005-flight-details-and-seat-map.md) | Flight details and seat map | FLY-06 | Accepted |
 | [0006](0006-simulated-card-payment.md) | Simulated card payment | FLY-07 | Accepted |
 | [0007](0007-booking-and-confirmation.md) | Booking and confirmation | FLY-08 | Accepted |
+| [0008](0008-my-trips.md) | My trips: reservations and booking history | FLY-09 | Accepted |

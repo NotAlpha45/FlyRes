@@ -75,13 +75,20 @@ public final class Reservation {
         status = ReservationStatus.CANCELLED;
     }
 
-    /** Returns COMPLETED after departure without changing the stored CONFIRMED state. */
+    /**
+     * Returns COMPLETED once the flight has departed (same rule as {@link Flight#isDeparted}), without
+     * changing the stored CONFIRMED state.
+     */
     public ReservationStatus statusAt(Clock clock) {
-        if (status == ReservationStatus.CONFIRMED
-                && !flight.getDepartureTime().isAfter(LocalDateTime.now(clock))) {
+        if (status == ReservationStatus.CONFIRMED && flight.isDeparted(clock)) {
             return ReservationStatus.COMPLETED;
         }
         return status;
+    }
+
+    /** This reservation with its effective status on {@code clock}. */
+    public ReservationSummary summaryAt(Clock clock) {
+        return new ReservationSummary(this, statusAt(clock));
     }
 
     private void require(ReservationStatus expected, String action) {

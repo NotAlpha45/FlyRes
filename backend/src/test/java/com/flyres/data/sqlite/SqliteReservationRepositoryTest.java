@@ -77,6 +77,28 @@ class SqliteReservationRepositoryTest {
     }
 
     @Test
+    void findByCustomer_returnsAllOfTheirReservationsWithFlightAndSeat() {
+        // FlightFixture already holds CONF01 (AC104 1A, CONFIRMED) and CANC01 (AC104 1B, CANCELLED) for customer 1.
+        reservations.insert(confirmed(FlightFixture.WS200, "QW2345", "2B"));
+
+        var found = reservations.findByCustomer(1);
+
+        assertEquals(java.util.List.of("CONF01", "CANC01", "QW2345"),
+                found.stream().map(Reservation::getConfirmationCode).toList());
+        Reservation cancelled = found.get(1);
+        assertEquals(ReservationStatus.CANCELLED, cancelled.getStatus());
+        assertTrue(cancelled.getCancelledAt().isPresent());
+        assertEquals("1B", cancelled.getSeat().label());
+        assertEquals("AC104", cancelled.getFlight().getFlightNumber());
+        assertEquals("WS200", found.get(2).getFlight().getFlightNumber());
+    }
+
+    @Test
+    void findByCustomer_otherCustomerOrNone_isEmpty() {
+        assertTrue(reservations.findByCustomer(2).isEmpty());
+    }
+
+    @Test
     void findById_unknownId_isEmpty() {
         assertFalse(reservations.findById(999).isPresent());
     }

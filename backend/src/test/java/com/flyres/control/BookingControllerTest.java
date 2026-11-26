@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.flyres.common.exception.AccessDeniedException;
 import com.flyres.common.exception.BookingException;
+import com.flyres.common.exception.NotFoundException;
 import com.flyres.data.DatabaseManager;
 import com.flyres.data.TransactionRunner;
 import com.flyres.data.sqlite.SqliteFlightRepository;
@@ -14,10 +15,13 @@ import com.flyres.data.sqlite.SqliteReservationRepository;
 import com.flyres.data.sqlite.SqliteSeatRepository;
 import com.flyres.domain.booking.BookingConfirmation;
 import com.flyres.domain.booking.BookingRequest;
+import com.flyres.domain.booking.MyTrips;
 import com.flyres.domain.booking.PaymentDetails;
 import com.flyres.domain.booking.PaymentStatus;
 import com.flyres.domain.booking.Reservation;
+import com.flyres.domain.booking.ReservationDetails;
 import com.flyres.domain.booking.ReservationStatus;
+import com.flyres.domain.booking.ReservationSummary;
 import com.flyres.domain.flight.Seat;
 import com.flyres.domain.flight.SeatAvailability;
 import com.flyres.domain.user.Role;
@@ -218,6 +222,70 @@ class BookingControllerTest {
                 () -> book(ADMIN, FlightFixture.WS200, seat, 15900, approvedCard()));
     }
 
+    // ---------- My trips (FLY-09) ----------
+
+    @Test
+    void listMyReservations_customer_groupsOwnTripsByEffectiveStatus() throws SQLException {
+        // Fixture: CONF01 on AC104 (18:00 today, upcoming) and CANC01 (cancelled), both for customer 1.
+        FlightFixture.insertReservation(database.getConnection(), "PAST01", 1, "1A", "CONFIRMED");
+        FlightFixture.insertReservation(database.getConnection(), "ARCH01", FlightFixture.AC106_ARCHIVED, "1A",
+                "CANCELLED");
+        book(CUSTOMER, FlightFixture.WS200, freeSeat(FlightFixture.WS200), 15900, approvedCard());
+
+        MyTrips trips = booking.listMyReservations(CUSTOMER);
+
+        assertEquals(List.of("AC104", "WS200"), flightNumbers(trips.upcoming()));
+        assertEquals(List.of("AC100"), flightNumbers(trips.past()));
+        assertEquals(ReservationStatus.COMPLETED, trips.past().get(0).status());
+        assertEquals(2, trips.cancelled().size());
+        assertTrue(trips.cancelled().stream().anyMatch(ReservationSummary::isFlightRemoved));
+    }
+
+    @Test
+    void listMyReservations_returnsOnlyTheActorsReservations() {
+        assertTrue(booking.listMyReservations(OTHER_CUSTOMER).isEmpty());
+    }
+
+    @Test
+    void listMyReservations_asAdmin_throwsAccessDeniedException() {
+        assertThrows(AccessDeniedException.class, () -> booking.listMyReservations(ADMIN));
+    }
+
+    @Test
+    void getReservation_ownTrip_includesPaymentRecord() {
+        Reservation saved = book(CUSTOMER, FlightFixture.WS200, freeSeat(FlightFixture.WS200), 15900, approvedCard());
+
+        ReservationDetails details = booking.getReservation(CUSTOMER, saved.getId());
+
+        assertEquals(saved.getConfirmationCode(), details.summary().reservation().getConfirmationCode());
+        assertEquals(ReservationStatus.CONFIRMED, details.summary().status());
+        assertEquals("4242", details.paymentRecord().orElseThrow().getCardLast4());
+        assertEquals(PaymentStatus.COMPLETED, details.paymentRecord().orElseThrow().getStatus());
+    }
+
+    @Test
+    void getReservation_otherCustomersReservation_throwsAccessDeniedException() {
+        Reservation saved = book(CUSTOMER, FlightFixture.WS200, freeSeat(FlightFixture.WS200), 15900, approvedCard());
+
+        assertThrows(AccessDeniedException.class, () -> booking.getReservation(OTHER_CUSTOMER, saved.getId()));
+    }
+
+    @Test
+    void getReservation_unknownId_throwsNotFoundException() {
+        NotFoundException failure = assertThrows(NotFoundException.class, () -> booking.getReservation(CUSTOMER, 999));
+
+        assertEquals(BookingController.TRIP_NOT_FOUND, failure.getMessage());
+    }
+
+    @Test
+    void getReservation_asAdmin_throwsAccessDeniedException() {
+        assertThrows(AccessDeniedException.class, () -> booking.getReservation(ADMIN, 1));
+    }
+
+    private static List<String> flightNumbers(List<ReservationSummary> trips) {
+        return trips.stream().map(t -> t.reservation().getFlight().getFlightNumber()).toList();
+    }
+
     @Test
     void confirmationCodeGenerator_retriesCollisionAndUsesAllowedCharacters() {
         AtomicInteger checks = new AtomicInteger();
@@ -230,6 +298,11 @@ class BookingControllerTest {
             @Override
             public java.util.Optional<Reservation> findById(long id) {
                 return java.util.Optional.empty();
+            }
+
+            @Override
+            public java.util.List<Reservation> findByCustomer(long customerId) {
+                return java.util.List.of();
             }
 
             @Override
@@ -268,6 +341,11 @@ class BookingControllerTest {
             @Override
             public java.util.Optional<Reservation> findById(long id) {
                 return java.util.Optional.empty();
+            }
+
+            @Override
+            public java.util.List<Reservation> findByCustomer(long customerId) {
+                return java.util.List.of();
             }
 
             @Override

@@ -4,7 +4,6 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
-<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns:fx="http://javafx.com/fxml"
@@ -34,9 +33,7 @@
             </VBox>
         </HBox>
         <HBox styleClass="button-row">
-            <StackPane fx:id="tripsHolder">
-                <Button fx:id="tripsButton" text="View my trips" onAction="#onViewTrips" disable="true"/>
-            </StackPane>
+            <Button fx:id="tripsButton" text="View my trips" onAction="#onViewTrips"/>
             <Region HBox.hgrow="ALWAYS"/>
             <Button text="Search again" styleClass="accent" onAction="#onSearchAgain"/>
         </HBox>

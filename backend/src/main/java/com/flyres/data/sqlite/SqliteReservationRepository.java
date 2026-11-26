@@ -14,6 +14,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import org.sqlite.SQLiteErrorCode;
 import org.sqlite.SQLiteException;
@@ -22,6 +24,13 @@ import org.sqlite.SQLiteException;
 public final class SqliteReservationRepository implements ReservationRepository {
 
     private static final DateTimeFormatter TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+
+    /** A reservation with its seat; the flight is loaded through {@link FlightRepository}. */
+    private static final String RESERVATION_SELECT = """
+            SELECT r.id, r.confirmation_code, r.customer_id, r.amount_cents, r.status, r.created_at,
+                   r.cancelled_at, s.id AS seat_id, s.flight_id, s.seat_label
+            FROM reservations r JOIN seats s ON s.id = r.seat_id
+            """;
 
     private final DatabaseManager database;
     private final FlightRepository flights;
@@ -65,31 +74,46 @@ public final class SqliteReservationRepository implements ReservationRepository 
 
     @Override
     public Optional<Reservation> findById(long id) {
-        String sql = """
-                SELECT r.id, r.confirmation_code, r.customer_id, r.amount_cents, r.status, r.created_at,
-                       r.cancelled_at, s.id AS seat_id, s.flight_id, s.seat_label
-                FROM reservations r JOIN seats s ON s.id = r.seat_id
-                WHERE r.id = ?""";
+        String sql = RESERVATION_SELECT + "WHERE r.id = ?";
         try (PreparedStatement statement = database.getConnection().prepareStatement(sql)) {
             statement.setLong(1, id);
             try (ResultSet row = statement.executeQuery()) {
-                if (!row.next()) {
-                    return Optional.empty();
-                }
-                Seat seat = new Seat(row.getLong("seat_id"), row.getLong("flight_id"), row.getString("seat_label"));
-                Flight flight = flights.findById(seat.flightId())
-                    .orElseThrow(() -> new DataAccessException("Reservation flight was not found",
-                        new IllegalStateException("The reservation references a missing flight")));
-                String cancelledAt = row.getString("cancelled_at");
-                return Optional.of(Reservation.restore(row.getLong("id"), row.getString("confirmation_code"),
-                        row.getLong("customer_id"), seat, flight, row.getLong("amount_cents"),
-                        ReservationStatus.valueOf(row.getString("status")),
-                        LocalDateTime.parse(row.getString("created_at")),
-                        cancelledAt == null ? null : LocalDateTime.parse(cancelledAt)));
+                return row.next() ? Optional.of(toReservation(row)) : Optional.empty();
             }
         } catch (SQLException e) {
             throw new DataAccessException("Could not load reservation " + id, e);
         }
+    }
+
+    @Override
+    public List<Reservation> findByCustomer(long customerId) {
+        String sql = RESERVATION_SELECT + "WHERE r.customer_id = ? ORDER BY r.id";
+        try (PreparedStatement statement = database.getConnection().prepareStatement(sql)) {
+            statement.setLong(1, customerId);
+            try (ResultSet rows = statement.executeQuery()) {
+                List<Reservation> found = new ArrayList<>();
+                while (rows.next()) {
+                    found.add(toReservation(rows));
+                }
+                return found;
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException("Could not load the customer's reservations", e);
+        }
+    }
+
+    /** Maps one row of {@link #RESERVATION_SELECT}; the flight is loaded with its route, aircraft and status. */
+    private Reservation toReservation(ResultSet row) throws SQLException {
+        Seat seat = new Seat(row.getLong("seat_id"), row.getLong("flight_id"), row.getString("seat_label"));
+        Flight flight = flights.findById(seat.flightId())
+                .orElseThrow(() -> new DataAccessException("Reservation flight was not found",
+                        new IllegalStateException("The reservation references a missing flight")));
+        String cancelledAt = row.getString("cancelled_at");
+        return Reservation.restore(row.getLong("id"), row.getString("confirmation_code"),
+                row.getLong("customer_id"), seat, flight, row.getLong("amount_cents"),
+                ReservationStatus.valueOf(row.getString("status")),
+                LocalDateTime.parse(row.getString("created_at")),
+                cancelledAt == null ? null : LocalDateTime.parse(cancelledAt));
     }
 
     @Override
