@@ -13,6 +13,7 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * &lt;&lt;control&gt;&gt; Simulated card payments. {@link #processPayment} validates and authorizes a card
@@ -60,6 +61,11 @@ public final class PaymentController {
         payment.authorize();
         payment.complete(LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS));
         return payment;
+    }
+
+    /** The payment recorded for a reservation. Called by the booking control, which checks access first. */
+    public Optional<Payment> paymentFor(long reservationId) {
+        return payments.findByReservationId(reservationId);
     }
 
     /** Saves a COMPLETED payment for its reservation. Called by the booking inside its transaction. */

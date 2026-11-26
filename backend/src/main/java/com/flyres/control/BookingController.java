@@ -1,11 +1,14 @@
 package com.flyres.control;
 
+import com.flyres.common.exception.AccessDeniedException;
 import com.flyres.common.exception.BookingException;
 import com.flyres.common.exception.NotFoundException;
 import com.flyres.domain.booking.BookingConfirmation;
 import com.flyres.domain.booking.BookingRequest;
+import com.flyres.domain.booking.MyTrips;
 import com.flyres.domain.booking.Payment;
 import com.flyres.domain.booking.Reservation;
+import com.flyres.domain.booking.ReservationDetails;
 import com.flyres.domain.flight.Flight;
 import com.flyres.domain.flight.FlightStatus;
 import com.flyres.domain.flight.Seat;
@@ -23,11 +26,17 @@ import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.Random;
 
-/** Coordinates fare validation, simulated payment and reservation creation in one transaction. */
+/**
+ * &lt;&lt;control&gt;&gt; Booking a flight (fare check, simulated payment and reservation in one transaction) and
+ * viewing the customer's own trips.
+ */
 public final class BookingController {
 
     /** Shown when the chosen seat does not belong to the flight being booked. */
     public static final String SEAT_NOT_ON_FLIGHT = "That seat is not on this flight. Pick a seat from the map.";
+
+    /** Shown when a reservation id does not exist. */
+    public static final String TRIP_NOT_FOUND = "This trip was not found.";
 
     private final ReservationRepository reservations;
     private final SeatRepository seats;
@@ -53,11 +62,30 @@ public final class BookingController {
         Access.require(actor, "book a flight", Role.CUSTOMER);
         Objects.requireNonNull(request, "request");
         if (request.customerId() != actor.getId()) {
-            throw new com.flyres.common.exception.AccessDeniedException(
+            throw new AccessDeniedException(
                     "You don't have permission to book for another customer.");
         }
 
         return transactions.inTransaction(() -> bookInTransaction(actor, request));
+    }
+
+    /** The actor's own reservations, grouped into upcoming, past and cancelled trips. */
+    public MyTrips listMyReservations(User actor) {
+        Access.require(actor, "view trips", Role.CUSTOMER);
+        return MyTrips.of(reservations.findByCustomer(actor.getId()).stream()
+                .map(reservation -> reservation.summaryAt(clock))
+                .toList());
+    }
+
+    /** One of the actor's own reservations with its payment record. */
+    public ReservationDetails getReservation(User actor, long reservationId) {
+        Access.require(actor, "view trips", Role.CUSTOMER);
+        Reservation reservation = reservations.findById(reservationId)
+                .orElseThrow(() -> new NotFoundException(TRIP_NOT_FOUND));
+        if (reservation.getCustomerId() != actor.getId()) {
+            throw new AccessDeniedException("You can only view your own trips.");
+        }
+        return new ReservationDetails(reservation.summaryAt(clock), payments.paymentFor(reservationId).orElse(null));
     }
 
     private BookingConfirmation bookInTransaction(User actor, BookingRequest request) {
