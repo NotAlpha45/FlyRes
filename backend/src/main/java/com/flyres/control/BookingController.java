@@ -63,7 +63,7 @@ public final class BookingController {
         LocalDateTime now = LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS);
         Flight flight = flights.findById(request.flightId())
                 .orElseThrow(() -> new NotFoundException("This flight was not found."));
-        if (flight.getStatus() != FlightStatus.SCHEDULED || !flight.getDepartureTime().isAfter(now)) {
+        if (flight.getStatus() != FlightStatus.SCHEDULED || flight.isDeparted(clock)) {
             throw new BookingException(FlightSearchController.FLIGHT_UNAVAILABLE);
         }
 
