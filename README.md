@@ -118,15 +118,15 @@ The set of control classes is fixed: `AuthenticationController`, `FlightSearchCo
 Work happens on GitHub issues titled `FLY-nn`, grouped into milestones (see the [issues](https://github.com/NotAlpha45/FlyRes/issues) and [milestones](https://github.com/NotAlpha45/FlyRes/milestones)). Each issue is labelled **Core Feature**, **Enhancement** or **Bug**. A `FLY-nn` number is not the same as the GitHub issue number (`#nn`), so check both.
 
 1. Read the issue and its acceptance criteria. Check that its dependencies are merged.
-2. Branch from `master`: `feature/FLY-<nn>-short-name`.
+2. Branch from `master`: `feature/FLY-<nn>-short-name`, created with `git switch -c <branch> --no-track origin/master` and pushed with `git push -u origin <branch>`. A branch that tracks `master` would push straight to `master`.
 3. Build from the bottom up:
    `schema.sql` → `domain` → `repository` interface → `data.sqlite` implementation → `control` (with role checks) → wire it in `FlyResBackend` → FXML + `*ViewController`.
 4. Write tests alongside the control code (see [Testing](#testing)).
 5. Run `./gradlew build`. Then reset the database and run `./gradlew run`, and walk through every acceptance criterion by hand.
 6. If you added a class or a public control method, update `docs/diagrams/class-diagram.puml`.
    Write the feature's ADR in `docs/adr/` (see [docs/adr/README.md](docs/adr/README.md)): what the feature does, how it is built, and why, with the options considered.
-7. Commit messages follow the form `FLY-<nn>: <imperative summary>`, for example `FLY-14: book flight in a single transaction`.
-8. Open a PR with `Closes #<issue>` and the acceptance checklist ticked.
+7. **Commit step by step, not in one large commit:** one small commit per layer or step (domain, repository, control + tests, wiring, UI, docs), each building on its own. Commit messages follow `FLY-<nn>: <imperative summary> (#<GitHub issue>)`, for example `FLY-14: book flight in a single transaction (#16)`. FLY numbers and GitHub issue numbers differ, so always include the `#`.
+8. Open a PR against `master` with `Closes #<issue>` and the acceptance checklist ticked. Never push to `master` directly. After resolving merge conflicts, run `./gradlew build` before committing the merge.
 
 ### Coding conventions
 
