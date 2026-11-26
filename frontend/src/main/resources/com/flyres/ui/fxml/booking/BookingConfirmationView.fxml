@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.flyres.ui.view.booking.BookingConfirmationViewController"
+      styleClass="page">
+    <VBox styleClass="card booking-confirmation">
+        <Label text="Booking confirmed" styleClass="text-muted"/>
+        <Label fx:id="confirmationCodeLabel" styleClass="booking-code"/>
+        <Label fx:id="flightLabel" styleClass="detail-value"/>
+        <Label fx:id="routeLabel" styleClass="flight-route"/>
+        <HBox styleClass="detail-row">
+            <VBox styleClass="detail-item">
+                <Label text="Seat" styleClass="text-muted"/>
+                <Label fx:id="seatLabel" styleClass="detail-value"/>
+            </VBox>
+            <VBox styleClass="detail-item">
+                <Label text="Paid" styleClass="text-muted"/>
+                <Label fx:id="amountLabel" styleClass="detail-value"/>
+            </VBox>
+            <VBox styleClass="detail-item">
+                <Label text="Payment" styleClass="text-muted"/>
+                <Label fx:id="cardLabel" styleClass="detail-value"/>
+            </VBox>
+            <VBox styleClass="detail-item">
+                <Label text="Booked" styleClass="text-muted"/>
+                <Label fx:id="bookedAtLabel" styleClass="detail-value"/>
+            </VBox>
+        </HBox>
+        <HBox styleClass="button-row">
+            <StackPane fx:id="tripsHolder">
+                <Button fx:id="tripsButton" text="View my trips" onAction="#onViewTrips" disable="true"/>
+            </StackPane>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="Search again" styleClass="accent" onAction="#onSearchAgain"/>
+        </HBox>
+    </VBox>
+</VBox>

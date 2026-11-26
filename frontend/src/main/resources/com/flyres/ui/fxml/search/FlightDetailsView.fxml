@@ -60,7 +60,7 @@
             <Label fx:id="selectionLabel" styleClass="selection-summary"/>
             <Region HBox.hgrow="ALWAYS"/>
             <StackPane fx:id="continueHolder">
-                <Button fx:id="continueButton" text="Continue" styleClass="accent" disable="true"/>
+                <Button fx:id="continueButton" text="Continue" styleClass="accent" onAction="#onContinue"/>
             </StackPane>
         </HBox>
     </VBox>

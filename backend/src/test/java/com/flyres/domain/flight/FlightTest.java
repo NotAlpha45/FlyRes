@@ -57,6 +57,15 @@ class FlightTest {
     }
 
     @Test
+    void constructor_zeroOrNegativePrice_throws() {
+        LocalDateTime time = LocalDateTime.of(2030, 3, 11, 7, 0);
+        assertThrows(IllegalArgumentException.class,
+                () -> new Flight(1, "AC211", ROUTE, AIRCRAFT, time, time.plusHours(1), 0, FlightStatus.SCHEDULED));
+        assertThrows(IllegalArgumentException.class,
+                () -> new Flight(1, "AC211", ROUTE, AIRCRAFT, time, time.plusHours(1), -100, FlightStatus.SCHEDULED));
+    }
+
+    @Test
     void aircraftCapacity_isRowsTimesSeatsPerRow() {
         assertEquals(100, AIRCRAFT.capacity());
     }

@@ -48,6 +48,15 @@ package "com.flyres.control" {
     + processPayment(actor : User, method : PaymentMethod, amountCents : long) : Payment
     + recordPayment(reservationId : long, payment : Payment) : Payment
   }
+  class BookingController <<control>> {
+    + BookingController(reservations : ReservationRepository, seats : SeatRepository, flights : FlightRepository, payments : PaymentController, transactions : TransactionRunner, clock : Clock, random : Random)
+    + {static} SEAT_NOT_ON_FLIGHT : String
+    + book(actor : User, request : BookingRequest) : BookingConfirmation
+  }
+  class ConfirmationCodeGenerator <<utility>> {
+    ~ ConfirmationCodeGenerator(random : Random)
+    ~ next(reservations : ReservationRepository) : String
+  }
 }
 
 package "com.flyres.control.strategy" {
@@ -95,6 +104,37 @@ package "com.flyres.domain.booking" {
     expiry : YearMonth
     cvv : String
     + digits() : String
+  }
+  class Reservation <<entity>> {
+    - id : long
+    - confirmationCode : String
+    - customerId : long
+    - amountCents : long
+    - status : ReservationStatus
+    - createdAt : LocalDateTime
+    - cancelledAt : LocalDateTime
+    + {static} pending(customerId : long, seat : Seat, flight : Flight, amountCents : long) : Reservation
+    + {static} restore(id : long, confirmationCode : String, customerId : long, seat : Seat, flight : Flight, amountCents : long, status : ReservationStatus, createdAt : LocalDateTime, cancelledAt : LocalDateTime) : Reservation
+    + confirm(code : String, at : LocalDateTime) : void
+    + cancel(at : LocalDateTime) : void
+    + statusAt(clock : Clock) : ReservationStatus
+  }
+  enum ReservationStatus <<entity>> {
+    PENDING
+    CONFIRMED
+    CANCELLED
+    COMPLETED
+  }
+  class BookingRequest <<record>> {
+    customerId : long
+    flightId : long
+    seatId : long
+    expectedPriceCents : long
+    payment : PaymentDetails
+  }
+  class BookingConfirmation <<record>> {
+    reservation : Reservation
+    payment : Payment
   }
 }
 
@@ -210,6 +250,13 @@ package "com.flyres.repository" {
   interface PaymentRepository {
     + insert(reservationId : long, payment : Payment) : Payment
     + findByReservationId(reservationId : long) : Optional<Payment>
+  }
+  interface ReservationRepository {
+    + insert(reservation : Reservation) : Reservation
+    + findById(id : long) : Optional<Reservation>
+    + existsByCode(confirmationCode : String) : boolean
+    + hasConfirmedOnFlight(customerId : long, flightId : long) : boolean
+  }
   interface SeatRepository {
     + findByFlight(flightId : long) : List<SeatAvailability>
     + findById(seatId : long) : Optional<Seat>
@@ -260,6 +307,9 @@ package "com.flyres.data.sqlite" {
   class SqliteAirlineRepository
   class SqliteFlightRepository
   class SqlitePaymentRepository
+  class SqliteReservationRepository {
+    + SqliteReservationRepository(database : DatabaseManager, flights : FlightRepository)
+  }
   class SqliteSeatRepository
 }
 
@@ -336,6 +386,8 @@ package "com.flyres.ui.navigation" {
     HOME
     FLIGHT_SEARCH
     FLIGHT_DETAILS
+    BOOKING_PAYMENT
+    BOOKING_CONFIRMATION
     COMPONENT_DEMO
     + title() : String
   }
@@ -372,6 +424,7 @@ package "com.flyres.ui.component" {
     + clearErrors() : void
     + clearCvv() : void
     + setCardholderName(name : String) : void
+  }
   class SeatMapView {
     + setSeats(seatRows : int, seatsPerRow : int, seats : List<SeatAvailability>) : void
     + selectedSeatProperty() : ReadOnlyObjectProperty<Seat>
@@ -397,6 +450,17 @@ package "com.flyres.ui.view.search" {
   class FlightDetailsViewController <<boundary>> {
     + FlightDetailsViewController(context : ViewContext)
     + showFlight(flightId : long, searchToRestore : SearchCriteria) : void
+  }
+}
+
+package "com.flyres.ui.view.booking" {
+  class PaymentViewController <<boundary>> {
+    + PaymentViewController(context : ViewContext)
+    + showBooking(flight : Flight, seat : Seat, searchToRestore : SearchCriteria) : void
+  }
+  class BookingConfirmationViewController <<boundary>> {
+    + BookingConfirmationViewController(context : ViewContext)
+    + showReservation(reservation : Reservation, cardLast4 : String) : void
   }
 }
 
@@ -486,6 +550,28 @@ Payment --> PaymentStatus
 PaymentRepository <|.. SqlitePaymentRepository
 PaymentRepository ..> Payment
 SqlitePaymentRepository --> DatabaseManager
+FlyResBackend --> BookingController
+FlyResBackend ..> SqliteReservationRepository : creates
+BookingController --> ReservationRepository
+BookingController --> SeatRepository
+BookingController --> FlightRepository
+BookingController --> PaymentController
+BookingController --> TransactionRunner
+BookingController --> ConfirmationCodeGenerator
+BookingController ..> BookingRequest
+BookingController ..> BookingConfirmation : creates
+BookingConfirmation --> "1" Reservation
+BookingConfirmation --> "1" Payment
+BookingController ..> Reservation : creates
+BookingController ..> BookingException : throws
+ConfirmationCodeGenerator ..> ReservationRepository
+ReservationRepository <|.. SqliteReservationRepository
+SqliteReservationRepository --> DatabaseManager
+SqliteReservationRepository --> FlightRepository
+BookingRequest --> PaymentDetails
+Reservation --> ReservationStatus
+Reservation --> "1" Flight
+Reservation --> "1" Seat
 SqliteAirportRepository --> DatabaseManager
 SqliteAirlineRepository --> DatabaseManager
 FlightRepository ..> FlightSummary
@@ -550,6 +636,13 @@ FlightDetailsViewController --> ViewContext
 FlightDetailsViewController --> SeatMapView
 FlightDetailsViewController ..> FlightSearchController : getFlightDetails
 FlightDetailsViewController ..> FlightSearchViewController : restore
+FlightDetailsViewController ..> PaymentViewController : continues to
+PaymentViewController --> ViewContext
+PaymentViewController --> PaymentForm
+PaymentViewController ..> BookingController : book
+PaymentViewController ..> BookingConfirmationViewController : opens
+BookingConfirmationViewController --> ViewContext
+BookingConfirmationViewController ..> Reservation : displays
 SeatMapView ..> SeatAvailability
 ComponentDemoViewController --> SeatMapView
 @enduml

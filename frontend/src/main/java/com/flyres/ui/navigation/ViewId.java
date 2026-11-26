@@ -19,6 +19,10 @@ public enum ViewId {
     FLIGHT_SEARCH("Search flights", "search/FlightSearchView.fxml", true, Role.CUSTOMER, Role.AGENT),
     /** Opened from a search result; not listed in the sidebar. */
     FLIGHT_DETAILS("Flight details", "search/FlightDetailsView.fxml", true),
+    /** Opened after choosing a seat; not listed in the sidebar. */
+    BOOKING_PAYMENT("Payment", "booking/PaymentView.fxml", true),
+    /** Shown after a booking is confirmed; not listed in the sidebar. */
+    BOOKING_CONFIRMATION("Booking confirmed", "booking/BookingConfirmationView.fxml", true),
     COMPONENT_DEMO("Components", "demo/ComponentDemoView.fxml", true, Role.CUSTOMER, Role.AGENT, Role.ADMIN);
 
     private final String title;

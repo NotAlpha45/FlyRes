@@ -34,8 +34,9 @@ public final class Flight {
         if (!arrivalTime.isAfter(departureTime)) {
             throw new IllegalArgumentException("Arrival must be after departure");
         }
-        if (priceCents < 0) {
-            throw new IllegalArgumentException("Price cannot be negative");
+        // Every booking takes a payment, and a payment must be for a positive amount.
+        if (priceCents <= 0) {
+            throw new IllegalArgumentException("Price must be positive");
         }
     }
 

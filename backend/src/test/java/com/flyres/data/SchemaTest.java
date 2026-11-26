@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,16 @@ class SchemaTest {
     @AfterEach
     void tearDown() {
         database.close();
+    }
+
+    @Test
+    void updateFlight_zeroPrice_rejectedByDatabase() throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            SQLException error = assertThrows(SQLException.class,
+                    () -> statement.execute("UPDATE flights SET price_cents = 0 WHERE id = 1"));
+
+            assertTrue(error.getMessage().contains("CHECK"), error.getMessage());
+        }
     }
 
     @Test
