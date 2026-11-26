@@ -339,6 +339,33 @@
     -fx-pref-height: 320px;
 }
 
+.trip-table {
+    -fx-pref-height: 280px;
+}
+
+/* Trip status badges: one theme colour per status. */
+.status-badge {
+    -fx-padding: 2px 8px;
+    -fx-background-radius: 8px;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.status-badge.status-confirmed {
+    -fx-background-color: -color-accent-subtle;
+    -fx-text-fill: -color-accent-fg;
+}
+
+.status-badge.status-completed {
+    -fx-background-color: -color-neutral-subtle;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.status-badge.status-cancelled {
+    -fx-background-color: -color-danger-subtle;
+    -fx-text-fill: -color-danger-fg;
+}
+
 .data-table .action-column {
     -fx-alignment: center;
 }
