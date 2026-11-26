@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.flyres.common.exception.BookingException;
+import com.flyres.common.exception.DataAccessException;
 import com.flyres.data.DatabaseManager;
 import com.flyres.domain.booking.Reservation;
 import com.flyres.domain.booking.ReservationStatus;
@@ -65,6 +66,14 @@ class SqliteReservationRepositoryTest {
         BookingException failure = assertThrows(BookingException.class, () -> reservations.insert(second));
 
         assertEquals("Seat 1A was just taken. Pick another seat.", failure.getMessage());
+    }
+
+    @Test
+    void insert_duplicateConfirmationCode_isNotReportedAsSeatTaken() {
+        reservations.insert(confirmed(FlightFixture.WS200, "QW2345", "1A"));
+
+        assertThrows(DataAccessException.class,
+                () -> reservations.insert(confirmed(FlightFixture.WS200, "QW2345", "1B")));
     }
 
     @Test

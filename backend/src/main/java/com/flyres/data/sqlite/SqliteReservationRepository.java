@@ -15,6 +15,8 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
+import org.sqlite.SQLiteErrorCode;
+import org.sqlite.SQLiteException;
 
 /** SQLite implementation of {@link ReservationRepository}. */
 public final class SqliteReservationRepository implements ReservationRepository {
@@ -119,8 +121,15 @@ public final class SqliteReservationRepository implements ReservationRepository 
         }
     }
 
+    /**
+     * True when the insert broke {@code ux_reservations_confirmed_seat}. Decided by the result code, not
+     * the message text: reservations have only two UNIQUE constraints, and the other one
+     * ({@code confirmation_code}) is named in the message and pre-checked by the code generator.
+     */
     private static boolean isConfirmedSeatCollision(SQLException exception) {
+        boolean uniqueViolation = exception instanceof SQLiteException sqlite
+                && sqlite.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_UNIQUE;
         String message = exception.getMessage();
-        return message != null && message.contains("reservations.seat_id");
+        return uniqueViolation && (message == null || !message.contains("confirmation_code"));
     }
 }
