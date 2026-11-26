@@ -5,9 +5,9 @@ import com.flyres.common.exception.NotFoundException;
 import com.flyres.common.exception.ValidationException;
 import com.flyres.control.PaymentController;
 import com.flyres.control.FlightSearchController;
+import com.flyres.domain.booking.BookingConfirmation;
 import com.flyres.domain.booking.BookingRequest;
 import com.flyres.domain.booking.PaymentDetails;
-import com.flyres.domain.booking.Reservation;
 import com.flyres.domain.flight.Flight;
 import com.flyres.domain.flight.SearchCriteria;
 import com.flyres.domain.flight.Seat;
@@ -80,13 +80,12 @@ public final class PaymentViewController {
         PaymentDetails details = paymentForm.toDetails();
         boolean booked = false;
         try {
-            Reservation reservation = context.backend().booking().book(context.session().requireUser(),
+            BookingConfirmation booking = context.backend().booking().book(context.session().requireUser(),
                     new BookingRequest(context.session().requireUser().getId(), flight.getId(), seat.id(),
                             flight.getPriceCents(), details));
             booked = true;
-            String digits = details.digits();
             BookingConfirmationViewController confirmation = context.router().goTo(ViewId.BOOKING_CONFIRMATION);
-            confirmation.showReservation(reservation, digits.substring(digits.length() - 4));
+            confirmation.showReservation(booking.reservation(), booking.payment().getCardLast4());
         } catch (ValidationException e) {
             paymentForm.showErrors(e.getFieldErrors());
         } catch (BookingException e) {

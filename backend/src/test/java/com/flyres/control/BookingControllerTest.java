@@ -12,6 +12,7 @@ import com.flyres.data.sqlite.SqliteFlightRepository;
 import com.flyres.data.sqlite.SqlitePaymentRepository;
 import com.flyres.data.sqlite.SqliteReservationRepository;
 import com.flyres.data.sqlite.SqliteSeatRepository;
+import com.flyres.domain.booking.BookingConfirmation;
 import com.flyres.domain.booking.BookingRequest;
 import com.flyres.domain.booking.PaymentDetails;
 import com.flyres.domain.booking.PaymentStatus;
@@ -88,6 +89,18 @@ class BookingControllerTest {
         assertEquals(PaymentStatus.COMPLETED, payment.getStatus());
         assertEquals("4242", payment.getCardLast4());
         assertEquals(15900, payment.getAmountCents());
+    }
+
+    @Test
+    void book_returnsTheRecordedPayment() {
+        Seat seat = freeSeat(FlightFixture.WS200);
+
+        BookingConfirmation confirmation = bookWithPayment(CUSTOMER, FlightFixture.WS200, seat, 15900,
+                new PaymentDetails("Maya Patel", "4242-4242-4242-4242", YearMonth.of(2030, 4), "123"));
+
+        assertTrue(confirmation.payment().getId() > 0);
+        assertEquals(confirmation.reservation().getId(), confirmation.payment().getReservationId());
+        assertEquals("4242", confirmation.payment().getCardLast4());
     }
 
     @Test
@@ -277,6 +290,11 @@ class BookingControllerTest {
     }
 
     private Reservation book(User actor, long flightId, Seat seat, long expectedPrice, PaymentDetails payment) {
+        return bookWithPayment(actor, flightId, seat, expectedPrice, payment).reservation();
+    }
+
+    private BookingConfirmation bookWithPayment(User actor, long flightId, Seat seat, long expectedPrice,
+                                                PaymentDetails payment) {
         return booking.book(actor, new BookingRequest(actor.getId(), flightId, seat.id(), expectedPrice, payment));
     }
 

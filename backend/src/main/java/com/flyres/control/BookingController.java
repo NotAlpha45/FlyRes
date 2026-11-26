@@ -2,6 +2,7 @@ package com.flyres.control;
 
 import com.flyres.common.exception.BookingException;
 import com.flyres.common.exception.NotFoundException;
+import com.flyres.domain.booking.BookingConfirmation;
 import com.flyres.domain.booking.BookingRequest;
 import com.flyres.domain.booking.Payment;
 import com.flyres.domain.booking.Reservation;
@@ -47,8 +48,8 @@ public final class BookingController {
         this.codes = new ConfirmationCodeGenerator(random);
     }
 
-    /** Books the chosen seat and records its completed payment atomically. */
-    public Reservation book(User actor, BookingRequest request) {
+    /** Books the chosen seat and records its completed payment atomically; returns both. */
+    public BookingConfirmation book(User actor, BookingRequest request) {
         Access.require(actor, "book a flight", Role.CUSTOMER);
         Objects.requireNonNull(request, "request");
         if (request.customerId() != actor.getId()) {
@@ -59,7 +60,7 @@ public final class BookingController {
         return transactions.inTransaction(() -> bookInTransaction(actor, request));
     }
 
-    private Reservation bookInTransaction(User actor, BookingRequest request) {
+    private BookingConfirmation bookInTransaction(User actor, BookingRequest request) {
         LocalDateTime now = LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS);
         Flight flight = flights.findById(request.flightId())
                 .orElseThrow(() -> new NotFoundException("This flight was not found."));
@@ -90,8 +91,8 @@ public final class BookingController {
         Reservation reservation = Reservation.pending(actor.getId(), seat, flight, flight.getPriceCents());
         reservation.confirm(codes.next(reservations), now);
         Reservation saved = reservations.insert(reservation);
-        payments.recordPayment(saved.getId(), payment);
-        return saved;
+        Payment recorded = payments.recordPayment(saved.getId(), payment);
+        return new BookingConfirmation(saved, recorded);
     }
 
     private static BookingException seatTaken(Seat seat) {
