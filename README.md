@@ -74,8 +74,7 @@ backend/                       business and data layers
 frontend/                      presentation layer (JavaFX)
   com.flyres.ui                Launcher (main), FlyResApp (Application), AppSession (the logged-in user)
   com.flyres.ui.navigation     SceneRouter, ViewId, ViewContext
-  com.flyres.ui.component      Toasts, ConfirmDialog, FormValidator, ErrorReporter, FlightTable, PaymentForm, Formats
-  com.flyres.ui.component      Toasts, ConfirmDialog, FormValidator, ErrorReporter, FlightTable, SeatMapView, Formats
+  com.flyres.ui.component      Toasts, ConfirmDialog, FormValidator, ErrorReporter, FlightTable, SeatMapView, PaymentForm, Formats
   com.flyres.ui.view.*         <<boundary>> *ViewController classes, grouped by feature (shell/ is the app frame)
   src/main/resources/com/flyres/ui/
     fxml/                      one FXML file per screen, mirroring ui.view.*
