@@ -1,6 +1,7 @@
 package com.flyres.repository;
 
 import com.flyres.domain.booking.Reservation;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,6 +16,12 @@ public interface ReservationRepository {
 
     /** Every reservation the customer has made, confirmed or cancelled, with its flight and seat. */
     List<Reservation> findByCustomer(long customerId);
+
+    /**
+     * Marks a CONFIRMED reservation CANCELLED at {@code at}, which frees its seat. Throws
+     * {@link IllegalStateException} if the reservation is not CONFIRMED.
+     */
+    void markCancelled(long reservationId, LocalDateTime at);
 
     /** Whether a confirmation code is already assigned. */
     boolean existsByCode(String confirmationCode);

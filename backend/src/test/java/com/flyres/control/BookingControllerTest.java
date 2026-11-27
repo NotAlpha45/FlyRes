@@ -146,6 +146,11 @@ class BookingControllerTest {
             public java.util.Optional<com.flyres.domain.booking.Payment> findByReservationId(long reservationId) {
                 return paymentRepository.findByReservationId(reservationId);
             }
+
+            @Override
+            public void markRefunded(long reservationId, LocalDateTime at) {
+                paymentRepository.markRefunded(reservationId, at);
+            }
         };
         BookingController failingBooking = new BookingController(reservations, seats,
                 new SqliteFlightRepository(database), new PaymentController(failingPayments, FlightFixture.NOW),
@@ -306,6 +311,11 @@ class BookingControllerTest {
             }
 
             @Override
+            public void markCancelled(long reservationId, LocalDateTime at) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
             public boolean existsByCode(String confirmationCode) {
                 return checks.getAndIncrement() == 0;
             }
@@ -346,6 +356,11 @@ class BookingControllerTest {
             @Override
             public java.util.List<Reservation> findByCustomer(long customerId) {
                 return java.util.List.of();
+            }
+
+            @Override
+            public void markCancelled(long reservationId, LocalDateTime at) {
+                throw new UnsupportedOperationException();
             }
 
             @Override
