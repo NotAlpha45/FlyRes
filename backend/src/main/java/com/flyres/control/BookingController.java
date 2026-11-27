@@ -27,8 +27,8 @@ import java.util.Objects;
 import java.util.Random;
 
 /**
- * &lt;&lt;control&gt;&gt; Booking a flight (fare check, simulated payment and reservation in one transaction) and
- * viewing the customer's own trips.
+ * &lt;&lt;control&gt;&gt; Booking a flight (fare check, simulated payment and reservation in one transaction),
+ * viewing the customer's own trips, and cancelling them with a full refund.
  */
 public final class BookingController {
 
@@ -37,6 +37,12 @@ public final class BookingController {
 
     /** Shown when a reservation id does not exist. */
     public static final String TRIP_NOT_FOUND = "This trip was not found.";
+
+    /** Shown when cancelling a trip that is already cancelled (e.g. from a stale screen). */
+    public static final String ALREADY_CANCELLED = "This trip is already cancelled.";
+
+    /** Shown when cancelling a trip whose flight has departed. */
+    public static final String ALREADY_DEPARTED = "This trip has already departed and can't be cancelled.";
 
     private final ReservationRepository reservations;
     private final SeatRepository seats;
@@ -86,6 +92,34 @@ public final class BookingController {
             throw new AccessDeniedException("You can only view your own trips.");
         }
         return new ReservationDetails(reservation.summaryAt(clock), payments.paymentFor(reservationId).orElse(null));
+    }
+
+    /**
+     * Cancels one of the actor's upcoming trips with a full refund of the amount paid, in one transaction:
+     * the reservation becomes CANCELLED (freeing the seat) and its payment REFUNDED. Returns the trip as it
+     * now stands.
+     */
+    public ReservationDetails cancelReservation(User actor, long reservationId) {
+        Access.require(actor, "cancel a trip", Role.CUSTOMER);
+        return transactions.inTransaction(() -> {
+            Reservation reservation = reservations.findById(reservationId)
+                    .orElseThrow(() -> new NotFoundException(TRIP_NOT_FOUND));
+            if (reservation.getCustomerId() != actor.getId()) {
+                throw new AccessDeniedException("You can only cancel your own trips.");
+            }
+            switch (reservation.statusAt(clock)) {
+                case CANCELLED -> throw new BookingException(ALREADY_CANCELLED);
+                case COMPLETED -> throw new BookingException(ALREADY_DEPARTED);
+                default -> { }
+            }
+
+            LocalDateTime now = LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS);
+            reservation.cancel(now);
+            reservations.markCancelled(reservationId, now);
+            // The refund is the stored amount paid, never the flight's current price.
+            Payment refunded = payments.refund(reservationId);
+            return new ReservationDetails(reservation.summaryAt(clock), refunded);
+        });
     }
 
     private BookingConfirmation bookInTransaction(User actor, BookingRequest request) {
