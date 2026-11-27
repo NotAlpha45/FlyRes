@@ -1,6 +1,7 @@
 package com.flyres.ui.view.trips;
 
 import com.flyres.common.exception.AccessDeniedException;
+import com.flyres.common.exception.BookingException;
 import com.flyres.common.exception.NotFoundException;
 import com.flyres.domain.booking.Payment;
 import com.flyres.domain.booking.PaymentStatus;
@@ -9,6 +10,7 @@ import com.flyres.domain.booking.ReservationDetails;
 import com.flyres.domain.booking.ReservationStatus;
 import com.flyres.domain.booking.ReservationSummary;
 import com.flyres.domain.flight.Flight;
+import com.flyres.ui.component.ConfirmDialog;
 import com.flyres.ui.component.Formats;
 import com.flyres.ui.component.Toasts;
 import com.flyres.ui.component.TripTable;
@@ -16,6 +18,7 @@ import com.flyres.ui.navigation.ViewContext;
 import com.flyres.ui.navigation.ViewId;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
@@ -23,7 +26,8 @@ import javafx.scene.layout.VBox;
 
 /**
  * &lt;&lt;boundary&gt;&gt; One trip: calls {@code BookingController.getReservation} once and shows the flight,
- * seat, status and payment record. Cancel (FLY-10) and change seat (FLY-11) add actions here.
+ * seat, status and payment record. Upcoming trips can be cancelled with a full refund; change seat (FLY-11)
+ * adds its action next to Cancel trip.
  */
 public class TripDetailsViewController {
 
@@ -66,7 +70,11 @@ public class TripDetailsViewController {
     @FXML
     private Label noPaymentLabel;
 
+    @FXML
+    private Button cancelButton;
+
     private final ViewContext context;
+    private ReservationDetails shown;
 
     public TripDetailsViewController(ViewContext context) {
         this.context = context;
@@ -99,7 +107,38 @@ public class TripDetailsViewController {
         context.router().goTo(ViewId.MY_TRIPS);
     }
 
+    /** Asks for confirmation, stating the exact refund, then cancels the trip with one control call. */
+    @FXML
+    private void onCancelTrip() {
+        Reservation reservation = shown.summary().reservation();
+        Flight flight = reservation.getFlight();
+        String refund = Formats.money(reservation.getAmountCents());
+        String card = shown.paymentRecord().map(p -> " to the card ending " + p.getCardLast4()).orElse("");
+        boolean confirmed = ConfirmDialog.show(cancelButton, "Cancel this trip?",
+                "Cancel " + flight.getFlightNumber() + " " + flight.getRoute().origin().code() + " → "
+                        + flight.getRoute().destination().code() + " on " + Formats.dateTime(flight.getDepartureTime())
+                        + "? " + refund + " will be refunded in full" + card + ".",
+                "Cancel trip");
+        if (!confirmed) {
+            return;
+        }
+        try {
+            ReservationDetails cancelled = context.backend().booking()
+                    .cancelReservation(context.session().requireUser(), reservation.getId());
+            render(cancelled);
+            Toasts.success(codeLabel, "Trip cancelled. " + refund + " refunded.");
+        } catch (BookingException e) {
+            // Stale screen (already cancelled, or departed meanwhile): say why and show the trip as it is now.
+            Toasts.error(codeLabel, e.getMessage());
+            showTrip(reservation.getId());
+        } catch (NotFoundException | AccessDeniedException e) {
+            Toasts.error(codeLabel, e.getMessage());
+            onBack();
+        }
+    }
+
     private void render(ReservationDetails details) {
+        this.shown = details;
         ReservationSummary trip = details.summary();
         Reservation reservation = trip.reservation();
         Flight flight = reservation.getFlight();
@@ -124,8 +163,13 @@ public class TripDetailsViewController {
                     + " and fully refunded.");
         }
 
+        // Actions only for upcoming trips; the control refuses the others anyway.
+        actionRow.setVisible(trip.status() == ReservationStatus.CONFIRMED);
+
         amountLabel.setText(Formats.money(reservation.getAmountCents()));
-        details.paymentRecord().ifPresentOrElse(this::showPayment, () -> noPaymentLabel.setVisible(true));
+        noPaymentLabel.setVisible(details.paymentRecord().isEmpty());
+        refundedItem.setVisible(false);
+        details.paymentRecord().ifPresent(this::showPayment);
     }
 
     private void showPayment(Payment payment) {

@@ -50,8 +50,10 @@
                 <Label fx:id="bookedLabel" styleClass="detail-value"/>
             </VBox>
         </HBox>
-        <!-- FLY-10 (cancel) and FLY-11 (change seat) add their buttons here. -->
-        <HBox fx:id="actionRow" styleClass="button-row"/>
+        <!-- Actions for upcoming trips. FLY-11 adds "Change seat" here. -->
+        <HBox fx:id="actionRow" styleClass="button-row">
+            <Button fx:id="cancelButton" text="Cancel trip" styleClass="danger" onAction="#onCancelTrip"/>
+        </HBox>
     </VBox>
 
     <VBox styleClass="card">
