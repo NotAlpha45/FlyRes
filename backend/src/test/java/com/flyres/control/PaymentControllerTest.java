@@ -168,6 +168,30 @@ class PaymentControllerTest {
     }
 
     @Test
+    void refund_completedPayment_marksRefundedAtNow() {
+        payments.recordPayment(1, payments.processPayment(CUSTOMER, card("4242424242424242"), 18900));
+
+        Payment refunded = payments.refund(1);
+
+        assertEquals(PaymentStatus.REFUNDED, refunded.getStatus());
+        assertEquals(LocalDateTime.of(2030, 12, 15, 12, 0, 30), refunded.getRefundedAt().orElseThrow());
+        assertEquals(PaymentStatus.REFUNDED, repository.findByReservationId(1).orElseThrow().getStatus());
+    }
+
+    @Test
+    void refund_twice_throwsIllegalState() {
+        payments.recordPayment(1, payments.processPayment(CUSTOMER, card("4242424242424242"), 18900));
+        payments.refund(1);
+
+        assertThrows(IllegalStateException.class, () -> payments.refund(1));
+    }
+
+    @Test
+    void refund_noPayment_throwsIllegalState() {
+        assertThrows(IllegalStateException.class, () -> payments.refund(1));
+    }
+
+    @Test
     void recordPayment_notCompleted_throwsIllegalState() {
         assertThrows(IllegalStateException.class,
                 () -> payments.recordPayment(1, Payment.initiate("Maya", "4242", 100)));

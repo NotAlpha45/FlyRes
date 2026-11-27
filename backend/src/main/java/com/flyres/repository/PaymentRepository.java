@@ -1,6 +1,7 @@
 package com.flyres.repository;
 
 import com.flyres.domain.booking.Payment;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 /** Storage for payments. Only COMPLETED and REFUNDED payments are stored, one per reservation. */
@@ -11,4 +12,10 @@ public interface PaymentRepository {
 
     /** The payment of the reservation, if any. */
     Optional<Payment> findByReservationId(long reservationId);
+
+    /**
+     * Marks the reservation's COMPLETED payment REFUNDED at {@code at}. Throws {@link IllegalStateException}
+     * if there is no COMPLETED payment to refund, so a payment is never refunded twice.
+     */
+    void markRefunded(long reservationId, LocalDateTime at);
 }

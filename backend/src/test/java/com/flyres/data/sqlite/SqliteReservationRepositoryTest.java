@@ -99,6 +99,31 @@ class SqliteReservationRepositoryTest {
     }
 
     @Test
+    void markCancelled_confirmed_cancelsAndFreesTheSeat() {
+        Reservation saved = reservations.insert(confirmed(FlightFixture.WS200, "QW2345", "2A"));
+        LocalDateTime at = LocalDateTime.of(2030, 3, 10, 13, 0);
+
+        reservations.markCancelled(saved.getId(), at);
+
+        Reservation found = reservations.findById(saved.getId()).orElseThrow();
+        assertEquals(ReservationStatus.CANCELLED, found.getStatus());
+        assertEquals(at, found.getCancelledAt().orElseThrow());
+        assertFalse(seats.findByFlight(FlightFixture.WS200).stream()
+                .filter(s -> s.seat().label().equals("2A")).findFirst().orElseThrow().taken());
+        // The seat can be booked again.
+        reservations.insert(confirmed(FlightFixture.WS200, "RT6789", "2A"));
+    }
+
+    @Test
+    void markCancelled_alreadyCancelled_throwsIllegalState() {
+        Reservation saved = reservations.insert(confirmed(FlightFixture.WS200, "QW2345", "2A"));
+        reservations.markCancelled(saved.getId(), LocalDateTime.of(2030, 3, 10, 13, 0));
+
+        assertThrows(IllegalStateException.class,
+                () -> reservations.markCancelled(saved.getId(), LocalDateTime.of(2030, 3, 10, 14, 0)));
+    }
+
+    @Test
     void findById_unknownId_isEmpty() {
         assertFalse(reservations.findById(999).isPresent());
     }

@@ -102,6 +102,22 @@ public final class SqliteReservationRepository implements ReservationRepository 
         }
     }
 
+    @Override
+    public void markCancelled(long reservationId, LocalDateTime at) {
+        String sql = """
+                UPDATE reservations SET status = 'CANCELLED', cancelled_at = ?
+                WHERE id = ? AND status = 'CONFIRMED'""";
+        try (PreparedStatement statement = database.getConnection().prepareStatement(sql)) {
+            statement.setString(1, TIMESTAMP.format(at));
+            statement.setLong(2, reservationId);
+            if (statement.executeUpdate() != 1) {
+                throw new IllegalStateException("Reservation " + reservationId + " is not CONFIRMED");
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException("Could not cancel reservation " + reservationId, e);
+        }
+    }
+
     /** Maps one row of {@link #RESERVATION_SELECT}; the flight is loaded with its route, aircraft and status. */
     private Reservation toReservation(ResultSet row) throws SQLException {
         Seat seat = new Seat(row.getLong("seat_id"), row.getLong("flight_id"), row.getString("seat_label"));

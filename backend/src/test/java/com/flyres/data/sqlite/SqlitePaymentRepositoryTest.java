@@ -96,6 +96,30 @@ class SqlitePaymentRepositoryTest {
     }
 
     @Test
+    void markRefunded_completed_recordsRefundAndKeepsAmount() {
+        payments.insert(RESERVATION_ID, completed());
+        LocalDateTime refundedAt = LocalDateTime.of(2030, 3, 11, 9, 0);
+
+        payments.markRefunded(RESERVATION_ID, refundedAt);
+
+        Payment found = payments.findByReservationId(RESERVATION_ID).orElseThrow();
+        assertEquals(PaymentStatus.REFUNDED, found.getStatus());
+        assertEquals(refundedAt, found.getRefundedAt().orElseThrow());
+        assertEquals(18900, found.getAmountCents());
+    }
+
+    @Test
+    void markRefunded_twiceOrWithoutPayment_throwsIllegalState() {
+        assertThrows(IllegalStateException.class,
+                () -> payments.markRefunded(RESERVATION_ID, LocalDateTime.of(2030, 3, 11, 9, 0)));
+        payments.insert(RESERVATION_ID, completed());
+        payments.markRefunded(RESERVATION_ID, LocalDateTime.of(2030, 3, 11, 9, 0));
+
+        assertThrows(IllegalStateException.class,
+                () -> payments.markRefunded(RESERVATION_ID, LocalDateTime.of(2030, 3, 11, 10, 0)));
+    }
+
+    @Test
     void findByReservationId_none_isEmpty() {
         assertTrue(payments.findByReservationId(RESERVATION_ID).isEmpty());
     }

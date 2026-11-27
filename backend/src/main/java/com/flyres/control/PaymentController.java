@@ -68,6 +68,19 @@ public final class PaymentController {
         return payments.findByReservationId(reservationId);
     }
 
+    /**
+     * Refunds the reservation's payment in full (COMPLETED → REFUNDED) and returns it. Called by the booking
+     * control inside its cancellation transaction, after it has checked access.
+     */
+    public Payment refund(long reservationId) {
+        Payment payment = payments.findByReservationId(reservationId)
+                .orElseThrow(() -> new IllegalStateException("Reservation " + reservationId + " has no payment"));
+        LocalDateTime now = LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS);
+        payment.refund(now);
+        payments.markRefunded(reservationId, now);
+        return payment;
+    }
+
     /** Saves a COMPLETED payment for its reservation. Called by the booking inside its transaction. */
     public Payment recordPayment(long reservationId, Payment payment) {
         Objects.requireNonNull(payment, "payment");

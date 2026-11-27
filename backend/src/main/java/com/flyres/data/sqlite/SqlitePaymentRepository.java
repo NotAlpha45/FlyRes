@@ -55,6 +55,22 @@ public final class SqlitePaymentRepository implements PaymentRepository {
     }
 
     @Override
+    public void markRefunded(long reservationId, LocalDateTime at) {
+        String sql = """
+                UPDATE payments SET status = 'REFUNDED', refunded_at = ?
+                WHERE reservation_id = ? AND status = 'COMPLETED'""";
+        try (PreparedStatement statement = database.getConnection().prepareStatement(sql)) {
+            statement.setString(1, TIMESTAMP.format(at));
+            statement.setLong(2, reservationId);
+            if (statement.executeUpdate() != 1) {
+                throw new IllegalStateException("Reservation " + reservationId + " has no COMPLETED payment");
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException("Could not refund the payment for reservation " + reservationId, e);
+        }
+    }
+
+    @Override
     public Optional<Payment> findByReservationId(long reservationId) {
         String sql = """
                 SELECT id, reservation_id, cardholder_name, card_last4, amount_cents, status, paid_at, refunded_at

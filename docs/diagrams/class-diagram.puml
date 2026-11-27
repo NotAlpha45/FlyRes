@@ -48,14 +48,18 @@ package "com.flyres.control" {
     + processPayment(actor : User, method : PaymentMethod, amountCents : long) : Payment
     + recordPayment(reservationId : long, payment : Payment) : Payment
     + paymentFor(reservationId : long) : Optional<Payment>
+    + refund(reservationId : long) : Payment
   }
   class BookingController <<control>> {
     + BookingController(reservations : ReservationRepository, seats : SeatRepository, flights : FlightRepository, payments : PaymentController, transactions : TransactionRunner, clock : Clock, random : Random)
     + {static} SEAT_NOT_ON_FLIGHT : String
     + {static} TRIP_NOT_FOUND : String
+    + {static} ALREADY_CANCELLED : String
+    + {static} ALREADY_DEPARTED : String
     + book(actor : User, request : BookingRequest) : BookingConfirmation
     + listMyReservations(actor : User) : MyTrips
     + getReservation(actor : User, reservationId : long) : ReservationDetails
+    + cancelReservation(actor : User, reservationId : long) : ReservationDetails
   }
   class ConfirmationCodeGenerator <<utility>> {
     ~ ConfirmationCodeGenerator(random : Random)
@@ -266,6 +270,7 @@ package "com.flyres.repository" {
   interface PaymentRepository {
     + insert(reservationId : long, payment : Payment) : Payment
     + findByReservationId(reservationId : long) : Optional<Payment>
+    + markRefunded(reservationId : long, at : LocalDateTime) : void
   }
   interface ReservationRepository {
     + insert(reservation : Reservation) : Reservation
@@ -273,6 +278,7 @@ package "com.flyres.repository" {
     + existsByCode(confirmationCode : String) : boolean
     + hasConfirmedOnFlight(customerId : long, flightId : long) : boolean
     + findByCustomer(customerId : long) : List<Reservation>
+    + markCancelled(reservationId : long, at : LocalDateTime) : void
   }
   interface SeatRepository {
     + findByFlight(flightId : long) : List<SeatAvailability>
@@ -688,7 +694,9 @@ MyTripsViewController --> TripTable
 MyTripsViewController ..> BookingController : listMyReservations
 MyTripsViewController ..> TripDetailsViewController : opens
 TripDetailsViewController --> ViewContext
-TripDetailsViewController ..> BookingController : getReservation
+TripDetailsViewController ..> BookingController : getReservation, cancelReservation
+TripDetailsViewController ..> ConfirmDialog
+BookingController ..> PaymentController : refund
 TripDetailsViewController ..> TripTable : statusBadge
 BookingConfirmationViewController ..> MyTripsViewController : View my trips
 TripTable ..> ReservationSummary

@@ -146,6 +146,11 @@ class BookingControllerTest {
             public java.util.Optional<com.flyres.domain.booking.Payment> findByReservationId(long reservationId) {
                 return paymentRepository.findByReservationId(reservationId);
             }
+
+            @Override
+            public void markRefunded(long reservationId, LocalDateTime at) {
+                paymentRepository.markRefunded(reservationId, at);
+            }
         };
         BookingController failingBooking = new BookingController(reservations, seats,
                 new SqliteFlightRepository(database), new PaymentController(failingPayments, FlightFixture.NOW),
@@ -282,6 +287,119 @@ class BookingControllerTest {
         assertThrows(AccessDeniedException.class, () -> booking.getReservation(ADMIN, 1));
     }
 
+    // ---------- Cancel (FLY-10) ----------
+
+    @Test
+    void cancelReservation_upcoming_cancelsRefundsAndFreesTheSeat() {
+        Seat seat = freeSeat(FlightFixture.WS200);
+        Reservation saved = book(CUSTOMER, FlightFixture.WS200, seat, 15900, approvedCard());
+
+        ReservationDetails cancelled = booking.cancelReservation(CUSTOMER, saved.getId());
+
+        LocalDateTime now = LocalDateTime.now(FlightFixture.NOW);
+        assertEquals(ReservationStatus.CANCELLED, cancelled.summary().status());
+        assertEquals(PaymentStatus.REFUNDED, cancelled.paymentRecord().orElseThrow().getStatus());
+        Reservation stored = reservations.findById(saved.getId()).orElseThrow();
+        assertEquals(ReservationStatus.CANCELLED, stored.getStatus());
+        assertEquals(now, stored.getCancelledAt().orElseThrow());
+        var payment = paymentRepository.findByReservationId(saved.getId()).orElseThrow();
+        assertEquals(PaymentStatus.REFUNDED, payment.getStatus());
+        assertEquals(now, payment.getRefundedAt().orElseThrow());
+        assertTrue(seats.findByFlight(FlightFixture.WS200).stream()
+                .filter(availability -> availability.seat().id() == seat.id())
+                .noneMatch(SeatAvailability::taken));
+    }
+
+    @Test
+    void cancelReservation_alreadyCancelled_throwsBookingExceptionAndRefundsOnce() {
+        Reservation saved = book(CUSTOMER, FlightFixture.WS200, freeSeat(FlightFixture.WS200), 15900, approvedCard());
+        booking.cancelReservation(CUSTOMER, saved.getId());
+
+        BookingException failure = assertThrows(BookingException.class,
+                () -> booking.cancelReservation(CUSTOMER, saved.getId()));
+
+        assertEquals(BookingController.ALREADY_CANCELLED, failure.getMessage());
+        assertEquals(PaymentStatus.REFUNDED,
+                paymentRepository.findByReservationId(saved.getId()).orElseThrow().getStatus());
+    }
+
+    @Test
+    void cancelReservation_departedFlight_throwsBookingException() throws SQLException {
+        // AC100 (flight 1) left at 08:00 on the fixture's "today".
+        FlightFixture.insertReservation(database.getConnection(), "PAST01", 1, "1A", "CONFIRMED");
+        long id = reservations.findByCustomer(1).stream()
+                .filter(r -> r.getConfirmationCode().equals("PAST01")).findFirst().orElseThrow().getId();
+
+        BookingException failure = assertThrows(BookingException.class, () -> booking.cancelReservation(CUSTOMER, id));
+
+        assertEquals(BookingController.ALREADY_DEPARTED, failure.getMessage());
+        assertEquals(ReservationStatus.CONFIRMED, reservations.findById(id).orElseThrow().getStatus());
+    }
+
+    @Test
+    void cancelReservation_otherCustomer_throwsAccessDeniedException() {
+        Reservation saved = book(CUSTOMER, FlightFixture.WS200, freeSeat(FlightFixture.WS200), 15900, approvedCard());
+
+        assertThrows(AccessDeniedException.class, () -> booking.cancelReservation(OTHER_CUSTOMER, saved.getId()));
+        assertEquals(ReservationStatus.CONFIRMED, reservations.findById(saved.getId()).orElseThrow().getStatus());
+    }
+
+    @Test
+    void cancelReservation_unknownId_throwsNotFoundException() {
+        assertThrows(NotFoundException.class, () -> booking.cancelReservation(CUSTOMER, 999));
+    }
+
+    @Test
+    void cancelReservation_asAdmin_throwsAccessDeniedException() {
+        assertThrows(AccessDeniedException.class, () -> booking.cancelReservation(ADMIN, 1));
+    }
+
+    @Test
+    void cancelReservation_refundsStoredAmountNotCurrentPrice() throws SQLException {
+        Reservation saved = book(CUSTOMER, FlightFixture.WS200, freeSeat(FlightFixture.WS200), 15900, approvedCard());
+        try (var statement = database.getConnection()
+                .prepareStatement("UPDATE flights SET price_cents = 99900 WHERE id = ?")) {
+            statement.setLong(1, FlightFixture.WS200);
+            statement.executeUpdate();
+        }
+
+        ReservationDetails cancelled = booking.cancelReservation(CUSTOMER, saved.getId());
+
+        assertEquals(15900, cancelled.paymentRecord().orElseThrow().getAmountCents());
+        assertEquals(15900, paymentRepository.findByReservationId(saved.getId()).orElseThrow().getAmountCents());
+    }
+
+    @Test
+    void cancelReservation_refundFails_rollsBackTheCancellation() {
+        Reservation saved = book(CUSTOMER, FlightFixture.WS200, freeSeat(FlightFixture.WS200), 15900, approvedCard());
+        PaymentRepository failingRefunds = new PaymentRepository() {
+            @Override
+            public com.flyres.domain.booking.Payment insert(long reservationId,
+                                                             com.flyres.domain.booking.Payment payment) {
+                return paymentRepository.insert(reservationId, payment);
+            }
+
+            @Override
+            public java.util.Optional<com.flyres.domain.booking.Payment> findByReservationId(long reservationId) {
+                return paymentRepository.findByReservationId(reservationId);
+            }
+
+            @Override
+            public void markRefunded(long reservationId, LocalDateTime at) {
+                throw new IllegalStateException("simulated refund failure");
+            }
+        };
+        BookingController failing = new BookingController(reservations, seats, new SqliteFlightRepository(database),
+                new PaymentController(failingRefunds, FlightFixture.NOW), new TransactionRunner(database),
+                FlightFixture.NOW, new Random(12));
+
+        assertThrows(IllegalStateException.class, () -> failing.cancelReservation(CUSTOMER, saved.getId()));
+
+        assertEquals(ReservationStatus.CONFIRMED, reservations.findById(saved.getId()).orElseThrow().getStatus());
+        assertEquals(PaymentStatus.COMPLETED,
+                paymentRepository.findByReservationId(saved.getId()).orElseThrow().getStatus());
+    }
+
     private static List<String> flightNumbers(List<ReservationSummary> trips) {
         return trips.stream().map(t -> t.reservation().getFlight().getFlightNumber()).toList();
     }
@@ -303,6 +421,11 @@ class BookingControllerTest {
             @Override
             public java.util.List<Reservation> findByCustomer(long customerId) {
                 return java.util.List.of();
+            }
+
+            @Override
+            public void markCancelled(long reservationId, LocalDateTime at) {
+                throw new UnsupportedOperationException();
             }
 
             @Override
@@ -346,6 +469,11 @@ class BookingControllerTest {
             @Override
             public java.util.List<Reservation> findByCustomer(long customerId) {
                 return java.util.List.of();
+            }
+
+            @Override
+            public void markCancelled(long reservationId, LocalDateTime at) {
+                throw new UnsupportedOperationException();
             }
 
             @Override
