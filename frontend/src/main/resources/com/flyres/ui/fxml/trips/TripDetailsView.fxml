@@ -19,8 +19,10 @@
     <VBox styleClass="card">
         <HBox styleClass="card-header">
             <VBox styleClass="detail-item">
-                <Label text="Confirmation code" styleClass="text-muted"/>
+                <Label text="Confirmation code (booking reference)" styleClass="text-muted"/>
                 <Label fx:id="codeLabel" styleClass="booking-code"/>
+                <Label text="Quote it if you contact FlyRes about this trip. It isn't a password: it can't be used to sign in or change your booking."
+                       wrapText="true" styleClass="field-hint"/>
             </VBox>
             <Region HBox.hgrow="ALWAYS"/>
             <StackPane fx:id="statusHolder"/>
