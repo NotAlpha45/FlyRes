@@ -19,8 +19,10 @@
     <VBox styleClass="card">
         <HBox styleClass="card-header">
             <VBox styleClass="detail-item">
-                <Label text="Confirmation code" styleClass="text-muted"/>
+                <Label text="Confirmation code (booking reference)" styleClass="text-muted"/>
                 <Label fx:id="codeLabel" styleClass="booking-code"/>
+                <Label text="Quote it if you contact FlyRes about this trip. It isn't a password: it can't be used to sign in or change your booking."
+                       wrapText="true" styleClass="field-hint"/>
             </VBox>
             <Region HBox.hgrow="ALWAYS"/>
             <StackPane fx:id="statusHolder"/>
@@ -50,8 +52,9 @@
                 <Label fx:id="bookedLabel" styleClass="detail-value"/>
             </VBox>
         </HBox>
-        <!-- Actions for upcoming trips. FLY-11 adds "Change seat" here. -->
+        <!-- Actions for upcoming trips only. -->
         <HBox fx:id="actionRow" styleClass="button-row">
+            <Button text="Change seat" onAction="#onChangeSeat"/>
             <Button fx:id="cancelButton" text="Cancel trip" styleClass="danger" onAction="#onCancelTrip"/>
         </HBox>
     </VBox>

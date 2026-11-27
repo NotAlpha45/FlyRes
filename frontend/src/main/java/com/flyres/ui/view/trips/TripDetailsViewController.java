@@ -26,8 +26,8 @@ import javafx.scene.layout.VBox;
 
 /**
  * &lt;&lt;boundary&gt;&gt; One trip: calls {@code BookingController.getReservation} once and shows the flight,
- * seat, status and payment record. Upcoming trips can be cancelled with a full refund; change seat (FLY-11)
- * adds its action next to Cancel trip.
+ * seat, status and payment record. Upcoming trips can be cancelled with a full refund or moved to another
+ * seat (Change seat).
  */
 public class TripDetailsViewController {
 
@@ -105,6 +105,12 @@ public class TripDetailsViewController {
     @FXML
     private void onBack() {
         context.router().goTo(ViewId.MY_TRIPS);
+    }
+
+    @FXML
+    private void onChangeSeat() {
+        ChangeSeatViewController changeSeat = context.router().goTo(ViewId.CHANGE_SEAT);
+        changeSeat.showTrip(shown);
     }
 
     /** Asks for confirmation, stating the exact refund, then cancels the trip with one control call. */

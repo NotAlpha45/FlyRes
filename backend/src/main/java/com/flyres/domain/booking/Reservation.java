@@ -13,7 +13,7 @@ public final class Reservation {
     private final long id;
     private String confirmationCode;
     private final long customerId;
-    private final Seat seat;
+    private Seat seat;
     private final Flight flight;
     private final long amountCents;
     private ReservationStatus status;
@@ -66,6 +66,23 @@ public final class Reservation {
         confirmationCode = code;
         createdAt = Objects.requireNonNull(at, "at");
         status = ReservationStatus.CONFIRMED;
+    }
+
+    /**
+     * Moves a CONFIRMED reservation to another seat on the same flight (a self-transition: the status, amount
+     * and confirmation code stay the same). Throws {@link IllegalStateException} if not CONFIRMED and
+     * {@link IllegalArgumentException} for a seat on another flight or the current seat.
+     */
+    public void changeSeat(Seat newSeat) {
+        require(ReservationStatus.CONFIRMED, "change the seat of");
+        Objects.requireNonNull(newSeat, "newSeat");
+        if (newSeat.flightId() != flight.getId()) {
+            throw new IllegalArgumentException("The new seat must be on the same flight");
+        }
+        if (newSeat.id() == seat.id()) {
+            throw new IllegalArgumentException("The new seat is the current seat");
+        }
+        seat = newSeat;
     }
 
     /** CONFIRMED → CANCELLED. */

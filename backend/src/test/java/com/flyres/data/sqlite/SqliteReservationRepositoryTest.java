@@ -123,6 +123,45 @@ class SqliteReservationRepositoryTest {
                 () -> reservations.markCancelled(saved.getId(), LocalDateTime.of(2030, 3, 10, 14, 0)));
     }
 
+    private Seat seatOn(long flightId, String label) {
+        return seats.findByFlight(flightId).stream().map(availability -> availability.seat())
+                .filter(candidate -> candidate.label().equals(label)).findFirst().orElseThrow();
+    }
+
+    @Test
+    void updateSeat_freeSeat_movesReservationAndFreesOldSeat() {
+        Reservation saved = reservations.insert(confirmed(FlightFixture.WS200, "QW2345", "1A"));
+
+        reservations.updateSeat(saved.getId(), seatOn(FlightFixture.WS200, "3B"));
+
+        Reservation found = reservations.findById(saved.getId()).orElseThrow();
+        assertEquals("3B", found.getSeat().label());
+        assertEquals("QW2345", found.getConfirmationCode());
+        assertFalse(seats.findByFlight(FlightFixture.WS200).stream()
+                .filter(s -> s.seat().label().equals("1A")).findFirst().orElseThrow().taken());
+    }
+
+    @Test
+    void updateSeat_seatHeldByAnotherConfirmedReservation_throwsSeatTaken() {
+        reservations.insert(confirmed(FlightFixture.WS200, "QW2345", "1A"));
+        Reservation mine = reservations.insert(confirmed(FlightFixture.WS200, "RT6789", "1B"));
+
+        BookingException failure = assertThrows(BookingException.class,
+                () -> reservations.updateSeat(mine.getId(), seatOn(FlightFixture.WS200, "1A")));
+
+        assertEquals("Seat 1A was just taken. Pick another seat.", failure.getMessage());
+        assertEquals("1B", reservations.findById(mine.getId()).orElseThrow().getSeat().label());
+    }
+
+    @Test
+    void updateSeat_cancelledReservation_throwsIllegalState() {
+        Reservation saved = reservations.insert(confirmed(FlightFixture.WS200, "QW2345", "1A"));
+        reservations.markCancelled(saved.getId(), LocalDateTime.of(2030, 3, 10, 13, 0));
+
+        assertThrows(IllegalStateException.class,
+                () -> reservations.updateSeat(saved.getId(), seatOn(FlightFixture.WS200, "3B")));
+    }
+
     @Test
     void findById_unknownId_isEmpty() {
         assertFalse(reservations.findById(999).isPresent());

@@ -118,6 +118,23 @@ public final class SqliteReservationRepository implements ReservationRepository 
         }
     }
 
+    @Override
+    public void updateSeat(long reservationId, Seat newSeat) {
+        String sql = "UPDATE reservations SET seat_id = ? WHERE id = ? AND status = 'CONFIRMED'";
+        try (PreparedStatement statement = database.getConnection().prepareStatement(sql)) {
+            statement.setLong(1, newSeat.id());
+            statement.setLong(2, reservationId);
+            if (statement.executeUpdate() != 1) {
+                throw new IllegalStateException("Reservation " + reservationId + " is not CONFIRMED");
+            }
+        } catch (SQLException e) {
+            if (isConfirmedSeatCollision(e)) {
+                throw new BookingException("Seat " + newSeat.label() + " was just taken. Pick another seat.");
+            }
+            throw new DataAccessException("Could not change the seat of reservation " + reservationId, e);
+        }
+    }
+
     /** Maps one row of {@link #RESERVATION_SELECT}; the flight is loaded with its route, aircraft and status. */
     private Reservation toReservation(ResultSet row) throws SQLException {
         Seat seat = new Seat(row.getLong("seat_id"), row.getLong("flight_id"), row.getString("seat_label"));

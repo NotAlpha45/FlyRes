@@ -400,6 +400,127 @@ class BookingControllerTest {
                 paymentRepository.findByReservationId(saved.getId()).orElseThrow().getStatus());
     }
 
+    // ---------- Change seat (FLY-11) ----------
+
+    private Seat freeSeatOtherThan(long flightId, Seat taken) {
+        return seats.findByFlight(flightId).stream()
+                .filter(availability -> !availability.taken() && availability.seat().id() != taken.id())
+                .map(SeatAvailability::seat)
+                .findFirst().orElseThrow();
+    }
+
+    @Test
+    void changeSeat_freeSeatSameFlight_movesSeatAndKeepsAmountCodeAndPayment() {
+        Seat original = freeSeat(FlightFixture.WS200);
+        Reservation saved = book(CUSTOMER, FlightFixture.WS200, original, 15900, approvedCard());
+        Seat target = freeSeatOtherThan(FlightFixture.WS200, original);
+
+        ReservationDetails changed = booking.changeSeat(CUSTOMER, saved.getId(), target.id());
+
+        assertEquals(target.label(), changed.summary().reservation().getSeat().label());
+        Reservation stored = reservations.findById(saved.getId()).orElseThrow();
+        assertEquals(target.id(), stored.getSeat().id());
+        assertEquals(saved.getConfirmationCode(), stored.getConfirmationCode());
+        assertEquals(15900, stored.getAmountCents());
+        var payment = paymentRepository.findByReservationId(saved.getId()).orElseThrow();
+        assertEquals(PaymentStatus.COMPLETED, payment.getStatus());
+        assertEquals(15900, payment.getAmountCents());
+        var availability = seats.findByFlight(FlightFixture.WS200);
+        assertTrue(availability.stream().filter(s -> s.seat().id() == original.id()).noneMatch(SeatAvailability::taken));
+        assertTrue(availability.stream().filter(s -> s.seat().id() == target.id()).allMatch(SeatAvailability::taken));
+    }
+
+    @Test
+    void changeSeat_seatTaken_throwsBookingExceptionAndKeepsOldSeat() throws SQLException {
+        // The fixture only has customer 1; OTHER_CUSTOMER (id 2) needs a row before they can book.
+        try (var insert = database.getConnection().prepareStatement("""
+                INSERT INTO users (id, role, email, password_hash, password_salt, first_name, last_name, created_at)
+                VALUES (?, 'CUSTOMER', 'other@example.com', 'hash', 'salt', 'Other', 'Customer', '2030-01-01T00:00:00')""")) {
+            insert.setLong(1, OTHER_CUSTOMER.getId());
+            insert.executeUpdate();
+        }
+        Seat mine = freeSeat(FlightFixture.WS200);
+        Reservation saved = book(CUSTOMER, FlightFixture.WS200, mine, 15900, approvedCard());
+        Seat theirs = freeSeatOtherThan(FlightFixture.WS200, mine);
+        book(OTHER_CUSTOMER, FlightFixture.WS200, theirs, 15900, approvedCard());
+
+        BookingException failure = assertThrows(BookingException.class,
+                () -> booking.changeSeat(CUSTOMER, saved.getId(), theirs.id()));
+
+        assertEquals("Seat " + theirs.label() + " was just taken. Pick another seat.", failure.getMessage());
+        assertEquals(mine.id(), reservations.findById(saved.getId()).orElseThrow().getSeat().id());
+    }
+
+    @Test
+    void changeSeat_sameSeat_throwsBookingException() {
+        Seat mine = freeSeat(FlightFixture.WS200);
+        Reservation saved = book(CUSTOMER, FlightFixture.WS200, mine, 15900, approvedCard());
+
+        BookingException failure = assertThrows(BookingException.class,
+                () -> booking.changeSeat(CUSTOMER, saved.getId(), mine.id()));
+
+        assertEquals(BookingController.SAME_SEAT, failure.getMessage());
+    }
+
+    @Test
+    void changeSeat_seatOnAnotherFlight_throwsBookingException() {
+        Reservation saved = book(CUSTOMER, FlightFixture.WS200, freeSeat(FlightFixture.WS200), 15900, approvedCard());
+        Seat otherFlight = freeSeat(FlightFixture.AC104);
+
+        BookingException failure = assertThrows(BookingException.class,
+                () -> booking.changeSeat(CUSTOMER, saved.getId(), otherFlight.id()));
+
+        assertEquals(BookingController.SEAT_NOT_ON_FLIGHT, failure.getMessage());
+    }
+
+    @Test
+    void changeSeat_departedFlight_throwsBookingException() throws SQLException {
+        FlightFixture.insertReservation(database.getConnection(), "PAST01", 1, "1A", "CONFIRMED");
+        long id = reservations.findByCustomer(1).stream()
+                .filter(r -> r.getConfirmationCode().equals("PAST01")).findFirst().orElseThrow().getId();
+        Seat other = seats.findByFlight(1).stream().map(SeatAvailability::seat)
+                .filter(s -> s.label().equals("2A")).findFirst().orElseThrow();
+
+        BookingException failure = assertThrows(BookingException.class,
+                () -> booking.changeSeat(CUSTOMER, id, other.id()));
+
+        assertEquals(BookingController.SEAT_CHANGE_DEPARTED, failure.getMessage());
+    }
+
+    @Test
+    void changeSeat_cancelledTrip_throwsBookingException() {
+        Seat mine = freeSeat(FlightFixture.WS200);
+        Reservation saved = book(CUSTOMER, FlightFixture.WS200, mine, 15900, approvedCard());
+        booking.cancelReservation(CUSTOMER, saved.getId());
+
+        BookingException failure = assertThrows(BookingException.class,
+                () -> booking.changeSeat(CUSTOMER, saved.getId(), freeSeatOtherThan(FlightFixture.WS200, mine).id()));
+
+        assertEquals(BookingController.SEAT_CHANGE_CANCELLED, failure.getMessage());
+    }
+
+    @Test
+    void changeSeat_otherCustomer_throwsAccessDeniedException() {
+        Seat mine = freeSeat(FlightFixture.WS200);
+        Reservation saved = book(CUSTOMER, FlightFixture.WS200, mine, 15900, approvedCard());
+
+        assertThrows(AccessDeniedException.class,
+                () -> booking.changeSeat(OTHER_CUSTOMER, saved.getId(), freeSeatOtherThan(FlightFixture.WS200, mine).id()));
+    }
+
+    @Test
+    void changeSeat_unknownReservationOrSeat_throwsNotFoundException() {
+        Reservation saved = book(CUSTOMER, FlightFixture.WS200, freeSeat(FlightFixture.WS200), 15900, approvedCard());
+
+        assertThrows(NotFoundException.class, () -> booking.changeSeat(CUSTOMER, 999, 1));
+        assertThrows(NotFoundException.class, () -> booking.changeSeat(CUSTOMER, saved.getId(), 99_999));
+    }
+
+    @Test
+    void changeSeat_asAdmin_throwsAccessDeniedException() {
+        assertThrows(AccessDeniedException.class, () -> booking.changeSeat(ADMIN, 1, 1));
+    }
+
     private static List<String> flightNumbers(List<ReservationSummary> trips) {
         return trips.stream().map(t -> t.reservation().getFlight().getFlightNumber()).toList();
     }
@@ -425,6 +546,11 @@ class BookingControllerTest {
 
             @Override
             public void markCancelled(long reservationId, LocalDateTime at) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void updateSeat(long reservationId, Seat newSeat) {
                 throw new UnsupportedOperationException();
             }
 
@@ -473,6 +599,11 @@ class BookingControllerTest {
 
             @Override
             public void markCancelled(long reservationId, LocalDateTime at) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void updateSeat(long reservationId, Seat newSeat) {
                 throw new UnsupportedOperationException();
             }
 

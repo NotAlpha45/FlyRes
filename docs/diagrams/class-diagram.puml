@@ -56,10 +56,14 @@ package "com.flyres.control" {
     + {static} TRIP_NOT_FOUND : String
     + {static} ALREADY_CANCELLED : String
     + {static} ALREADY_DEPARTED : String
+    + {static} SAME_SEAT : String
+    + {static} SEAT_CHANGE_CANCELLED : String
+    + {static} SEAT_CHANGE_DEPARTED : String
     + book(actor : User, request : BookingRequest) : BookingConfirmation
     + listMyReservations(actor : User) : MyTrips
     + getReservation(actor : User, reservationId : long) : ReservationDetails
     + cancelReservation(actor : User, reservationId : long) : ReservationDetails
+    + changeSeat(actor : User, reservationId : long, newSeatId : long) : ReservationDetails
   }
   class ConfirmationCodeGenerator <<utility>> {
     ~ ConfirmationCodeGenerator(random : Random)
@@ -125,6 +129,7 @@ package "com.flyres.domain.booking" {
     + {static} restore(id : long, confirmationCode : String, customerId : long, seat : Seat, flight : Flight, amountCents : long, status : ReservationStatus, createdAt : LocalDateTime, cancelledAt : LocalDateTime) : Reservation
     + confirm(code : String, at : LocalDateTime) : void
     + cancel(at : LocalDateTime) : void
+    + changeSeat(newSeat : Seat) : void
     + statusAt(clock : Clock) : ReservationStatus
     + summaryAt(clock : Clock) : ReservationSummary
   }
@@ -279,6 +284,7 @@ package "com.flyres.repository" {
     + hasConfirmedOnFlight(customerId : long, flightId : long) : boolean
     + findByCustomer(customerId : long) : List<Reservation>
     + markCancelled(reservationId : long, at : LocalDateTime) : void
+    + updateSeat(reservationId : long, newSeat : Seat) : void
   }
   interface SeatRepository {
     + findByFlight(flightId : long) : List<SeatAvailability>
@@ -411,6 +417,7 @@ package "com.flyres.ui.navigation" {
     FLIGHT_DETAILS
     MY_TRIPS
     TRIP_DETAILS
+    CHANGE_SEAT
     BOOKING_PAYMENT
     BOOKING_CONFIRMATION
     COMPONENT_DEMO
@@ -491,6 +498,10 @@ package "com.flyres.ui.view.booking" {
   }
   class MyTripsViewController <<boundary>> {
     + MyTripsViewController(context : ViewContext)
+  }
+  class ChangeSeatViewController <<boundary>> {
+    + ChangeSeatViewController(context : ViewContext)
+    + showTrip(trip : ReservationDetails) : void
   }
   class TripDetailsViewController <<boundary>> {
     + TripDetailsViewController(context : ViewContext)
@@ -695,6 +706,12 @@ MyTripsViewController ..> BookingController : listMyReservations
 MyTripsViewController ..> TripDetailsViewController : opens
 TripDetailsViewController --> ViewContext
 TripDetailsViewController ..> BookingController : getReservation, cancelReservation
+TripDetailsViewController ..> ChangeSeatViewController : opens
+ChangeSeatViewController --> ViewContext
+ChangeSeatViewController --> SeatMapView : setHighlightedSeat
+ChangeSeatViewController ..> BookingController : changeSeat
+ChangeSeatViewController ..> FlightSearchController : getFlightDetails
+ChangeSeatViewController ..> ConfirmDialog
 TripDetailsViewController ..> ConfirmDialog
 BookingController ..> PaymentController : refund
 TripDetailsViewController ..> TripTable : statusBadge

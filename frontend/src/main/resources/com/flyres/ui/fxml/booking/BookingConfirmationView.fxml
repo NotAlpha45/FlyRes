@@ -10,8 +10,10 @@
       fx:controller="com.flyres.ui.view.booking.BookingConfirmationViewController"
       styleClass="page">
     <VBox styleClass="card booking-confirmation">
-        <Label text="Booking confirmed" styleClass="text-muted"/>
+        <Label text="Booking confirmed · your booking reference" styleClass="text-muted"/>
         <Label fx:id="confirmationCodeLabel" styleClass="booking-code"/>
+        <Label text="Quote this code if you contact FlyRes about this trip. It isn't a password: it can't be used to sign in or change your booking."
+               wrapText="true" styleClass="field-hint"/>
         <Label fx:id="flightLabel" styleClass="detail-value"/>
         <Label fx:id="routeLabel" styleClass="flight-route"/>
         <HBox styleClass="detail-row">
