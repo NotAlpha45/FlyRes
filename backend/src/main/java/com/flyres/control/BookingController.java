@@ -28,7 +28,7 @@ import java.util.Random;
 
 /**
  * &lt;&lt;control&gt;&gt; Booking a flight (fare check, simulated payment and reservation in one transaction),
- * viewing the customer's own trips, and cancelling them with a full refund.
+ * viewing the customer's own trips, cancelling them with a full refund, and changing their seat.
  */
 public final class BookingController {
 
@@ -43,6 +43,15 @@ public final class BookingController {
 
     /** Shown when cancelling a trip whose flight has departed. */
     public static final String ALREADY_DEPARTED = "This trip has already departed and can't be cancelled.";
+
+    /** Shown when the chosen new seat is the reservation's current seat. */
+    public static final String SAME_SEAT = "That is already your seat. Pick a different one.";
+
+    /** Shown when changing the seat of a cancelled trip. */
+    public static final String SEAT_CHANGE_CANCELLED = "This trip is cancelled, so its seat can't be changed.";
+
+    /** Shown when changing the seat of a trip whose flight has departed. */
+    public static final String SEAT_CHANGE_DEPARTED = "This trip has already departed, so its seat can't be changed.";
 
     private final ReservationRepository reservations;
     private final SeatRepository seats;
@@ -119,6 +128,47 @@ public final class BookingController {
             // The refund is the stored amount paid, never the flight's current price.
             Payment refunded = payments.refund(reservationId);
             return new ReservationDetails(reservation.summaryAt(clock), refunded);
+        });
+    }
+
+    /**
+     * Moves one of the actor's upcoming trips to a free seat on the same flight, in one transaction.
+     * Modify means change seat only: the flight, amount paid, payment and confirmation code stay the same,
+     * even if the flight's price has changed since booking. Returns the trip as it now stands.
+     */
+    public ReservationDetails changeSeat(User actor, long reservationId, long newSeatId) {
+        Access.require(actor, "change a seat", Role.CUSTOMER);
+        return transactions.inTransaction(() -> {
+            Reservation reservation = reservations.findById(reservationId)
+                    .orElseThrow(() -> new NotFoundException(TRIP_NOT_FOUND));
+            if (reservation.getCustomerId() != actor.getId()) {
+                throw new AccessDeniedException("You can only change the seat on your own trips.");
+            }
+            switch (reservation.statusAt(clock)) {
+                case CANCELLED -> throw new BookingException(SEAT_CHANGE_CANCELLED);
+                case COMPLETED -> throw new BookingException(SEAT_CHANGE_DEPARTED);
+                default -> { }
+            }
+
+            Seat newSeat = seats.findById(newSeatId)
+                    .orElseThrow(() -> new NotFoundException("This seat was not found."));
+            if (newSeat.flightId() != reservation.getFlight().getId()) {
+                throw new BookingException(SEAT_NOT_ON_FLIGHT);
+            }
+            if (newSeat.id() == reservation.getSeat().id()) {
+                throw new BookingException(SAME_SEAT);
+            }
+            boolean taken = seats.findByFlight(newSeat.flightId()).stream()
+                    .filter(availability -> availability.seat().id() == newSeat.id())
+                    .anyMatch(SeatAvailability::taken);
+            if (taken) {
+                throw seatTaken(newSeat);
+            }
+
+            reservation.changeSeat(newSeat);
+            // The unique index still guards a race with another booking for the same seat.
+            reservations.updateSeat(reservationId, newSeat);
+            return new ReservationDetails(reservation.summaryAt(clock), payments.paymentFor(reservationId).orElse(null));
         });
     }
 
