@@ -20,6 +20,8 @@ public enum ViewId {
     MY_TRIPS("My trips", "trips/MyTripsView.fxml", true, Role.CUSTOMER),
     /** Opened from My trips; not listed in the sidebar. */
     TRIP_DETAILS("Trip details", "trips/TripDetailsView.fxml", true),
+    /** Opened from Trip details; not listed in the sidebar. */
+    CHANGE_SEAT("Change seat", "trips/ChangeSeatView.fxml", true),
     /** Opened from a search result; not listed in the sidebar. */
     FLIGHT_DETAILS("Flight details", "search/FlightDetailsView.fxml", true),
     /** Opened after choosing a seat; not listed in the sidebar. */
