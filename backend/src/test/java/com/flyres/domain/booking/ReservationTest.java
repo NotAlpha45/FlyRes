@@ -75,6 +75,60 @@ class ReservationTest {
         assertThrows(IllegalStateException.class, () -> reservation.cancel(now.plusMinutes(2)));
     }
 
+    // ---------- changeSeat (FLY-11) ----------
+
+    private Reservation confirmed() {
+        Reservation reservation = Reservation.pending(1, seat, flight, 15900);
+        reservation.confirm("ABC234", LocalDateTime.of(2030, 3, 10, 12, 0));
+        return reservation;
+    }
+
+    private Seat otherSeatOn(long flightId) throws SQLException {
+        return new SqliteSeatRepository(database).findByFlight(flightId).stream()
+                .map(availability -> availability.seat())
+                .filter(candidate -> candidate.id() != seat.id())
+                .findFirst().orElseThrow();
+    }
+
+    @Test
+    void changeSeat_confirmed_movesSeatAndKeepsEverythingElse() throws SQLException {
+        Reservation reservation = confirmed();
+        Seat newSeat = otherSeatOn(FlightFixture.WS200);
+
+        reservation.changeSeat(newSeat);
+
+        assertEquals(newSeat, reservation.getSeat());
+        assertEquals(ReservationStatus.CONFIRMED, reservation.getStatus());
+        assertEquals("ABC234", reservation.getConfirmationCode());
+        assertEquals(15900, reservation.getAmountCents());
+    }
+
+    @Test
+    void changeSeat_cancelledOrPending_throwsIllegalState() throws SQLException {
+        Seat newSeat = otherSeatOn(FlightFixture.WS200);
+        Reservation cancelled = confirmed();
+        cancelled.cancel(LocalDateTime.of(2030, 3, 10, 13, 0));
+
+        assertThrows(IllegalStateException.class, () -> cancelled.changeSeat(newSeat));
+        assertThrows(IllegalStateException.class,
+                () -> Reservation.pending(1, seat, flight, 15900).changeSeat(newSeat));
+    }
+
+    @Test
+    void changeSeat_seatOnAnotherFlight_throwsIllegalArgument() throws SQLException {
+        Reservation reservation = confirmed();
+        Seat otherFlightSeat = otherSeatOn(FlightFixture.AC104);
+
+        assertThrows(IllegalArgumentException.class, () -> reservation.changeSeat(otherFlightSeat));
+    }
+
+    @Test
+    void changeSeat_sameSeat_throwsIllegalArgument() {
+        Reservation reservation = confirmed();
+
+        assertThrows(IllegalArgumentException.class, () -> reservation.changeSeat(seat));
+    }
+
     @Test
     void statusAt_departureBoundary_returnsCompletedWithoutChangingStoredStatus() {
         Reservation reservation = Reservation.pending(1, seat, flight, 15900);
