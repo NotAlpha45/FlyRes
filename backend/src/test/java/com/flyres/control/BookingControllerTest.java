@@ -429,6 +429,11 @@ class BookingControllerTest {
             }
 
             @Override
+            public void updateSeat(long reservationId, Seat newSeat) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
             public boolean existsByCode(String confirmationCode) {
                 return checks.getAndIncrement() == 0;
             }
@@ -473,6 +478,11 @@ class BookingControllerTest {
 
             @Override
             public void markCancelled(long reservationId, LocalDateTime at) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void updateSeat(long reservationId, Seat newSeat) {
                 throw new UnsupportedOperationException();
             }
 

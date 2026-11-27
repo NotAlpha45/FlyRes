@@ -1,6 +1,7 @@
 package com.flyres.repository;
 
 import com.flyres.domain.booking.Reservation;
+import com.flyres.domain.flight.Seat;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -22,6 +23,13 @@ public interface ReservationRepository {
      * {@link IllegalStateException} if the reservation is not CONFIRMED.
      */
     void markCancelled(long reservationId, LocalDateTime at);
+
+    /**
+     * Moves a CONFIRMED reservation to {@code newSeat}. Throws {@code BookingException} if another confirmed
+     * reservation holds that seat (the partial unique index), and {@link IllegalStateException} if the
+     * reservation is not CONFIRMED.
+     */
+    void updateSeat(long reservationId, Seat newSeat);
 
     /** Whether a confirmation code is already assigned. */
     boolean existsByCode(String confirmationCode);
