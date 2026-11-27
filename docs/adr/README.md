@@ -28,3 +28,4 @@ This folder is FlyRes's design log. Each record (ADR) explains **what a feature 
 | [0007](0007-booking-and-confirmation.md) | Booking and confirmation | FLY-08 | Accepted |
 | [0008](0008-my-trips.md) | My trips: reservations and booking history | FLY-09 | Accepted |
 | [0009](0009-cancel-reservation.md) | Cancel a reservation with a full refund | FLY-10 | Accepted |
+| [0010](0010-change-seat.md) | Modify a reservation: change seat | FLY-11 | Accepted |
